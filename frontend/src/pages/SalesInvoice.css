@@ -1,0 +1,75 @@
+.sales-invoice-page {
+  padding-bottom: 20px;
+}
+
+.action-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.action-btn {
+  background: none;
+  border: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  font-size: 18px;
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  transition: all 0.2s;
+}
+
+.action-btn:hover {
+  background: var(--color-primary-bg);
+  color: var(--color-primary);
+}
+
+.action-btn.danger:hover {
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+}
+
+.print-modal-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.print-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 10px;
+}
+
+.print-preview-container {
+  padding: var(--spacing-lg);
+  background: var(--color-bg);
+  border-radius: var(--radius-sm);
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .invoice-print-container, .invoice-print-container * {
+    visibility: visible;
+  }
+  .invoice-print-container {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 210mm !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  .modal-overlay, .modal-container, .print-modal-content {
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+  }
+  .print-actions, .modal-header {
+    display: none !important;
+  }
+}

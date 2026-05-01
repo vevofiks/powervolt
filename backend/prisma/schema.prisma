@@ -1,0 +1,430 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Placeholder Models ───────────────────────────────────────
+// These are empty shells. Business logic fields will be added later.
+
+model Product {
+  id              String         @id @default(uuid())
+  productName     String
+  category        String         // WIRES, SWITCHES, LIGHTS, MOTORS, TOOLS, ACCESSORIES
+  sku             String?        @unique
+  hsnCode         String?
+  purchasePrice   Float          @default(0)
+  salePrice       Float          @default(0)
+  gstPercent      Float          @default(0)
+  stockQty        Float          @default(0)
+  unit            String         @default("Nos") // Nos, Mtr, Kg, Box, Set, Roll, Pair
+  lowStockThreshold Float        @default(5)
+  isActive        Boolean        @default(true)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  stockHistory    StockHistory[]
+  salesInvoiceItems SalesInvoiceItem[]
+  purchaseInvoiceItems PurchaseInvoiceItem[]
+
+  @@index([productName])
+  @@index([category])
+  @@index([sku])
+}
+
+model StockHistory {
+  id          String   @id @default(uuid())
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  type        String   // PURCHASE_IN, SALE_OUT, ADJUSTMENT, RETURN_IN, DAMAGE_OUT
+  quantity    Float
+  stockAfter  Float
+  reference   String?  // Invoice number, etc.
+  remark      String?
+  date        DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  @@index([productId])
+  @@index([date])
+  @@index([type])
+}
+
+model Customer {
+  id            String   @id @default(uuid())
+  name          String
+  contactPerson String?
+  phone         String?
+  whatsapp      String?
+  email         String?
+  gstin         String?
+  address1      String?
+  address2      String?
+  city          String?
+  state         String?
+  pincode       String?
+  notes         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  salesInvoices SalesInvoice[]
+  workSites     WorkSite[]
+
+  @@index([name])
+  @@index([phone])
+  @@index([gstin])
+}
+
+model SalesInvoice {
+  id            String             @id @default(uuid())
+  invoiceNo     String             @unique
+  date          DateTime           @default(now())
+  invoiceType   String             @default("NON_GST") // GST, NON_GST
+  
+  customerId      String?
+  customer        Customer?          @relation(fields: [customerId], references: [id])
+  customerName    String?
+  customerPhone   String?
+  customerGstin   String?
+  customerAddress1 String?
+  customerAddress2 String?
+  customerCity    String?
+  customerState   String?
+  customerPincode String?
+
+  subtotal      Float              @default(0)
+  discount      Float              @default(0)
+  taxAmount     Float              @default(0) // Total GST
+  totalAmount   Float              @default(0)
+  profit        Float              @default(0)
+
+  accountId     String
+  account       Account            @relation(fields: [accountId], references: [id])
+
+  items         SalesInvoiceItem[]
+  
+  notes         String?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  @@index([invoiceNo])
+  @@index([date])
+  @@index([customerId])
+}
+
+model SalesInvoiceItem {
+  id              String       @id @default(uuid())
+  invoiceId       String
+  invoice         SalesInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  
+  productId       String
+  product         Product      @relation(fields: [productId], references: [id])
+  productName     String       // Snapshot
+  hsnCode         String?      // Snapshot
+  
+  qty             Float
+  rate            Float
+  purchasePrice   Float        // Snapshot for profit calculation
+  gstPercent      Float        @default(0)
+  amount          Float
+
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([invoiceId])
+  @@index([productId])
+}
+
+model Supplier {
+  id        String   @id @default(uuid())
+  name      String
+  phone     String?
+  address   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  purchaseInvoices PurchaseInvoice[]
+
+  @@index([name])
+}
+
+model PurchaseInvoice {
+  id            String             @id @default(uuid())
+  billNo        String             @unique
+  date          DateTime           @default(now())
+  
+  supplierId    String?
+  supplier      Supplier?          @relation(fields: [supplierId], references: [id])
+  supplierName  String?
+  supplierPhone String?
+
+  totalAmount   Float              @default(0)
+
+  accountId     String
+  account       Account            @relation(fields: [accountId], references: [id])
+
+  items         PurchaseInvoiceItem[]
+  
+  notes         String?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  @@index([billNo])
+  @@index([date])
+  @@index([supplierId])
+}
+
+model PurchaseInvoiceItem {
+  id              String          @id @default(uuid())
+  invoiceId       String
+  invoice         PurchaseInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  
+  productId       String
+  product         Product         @relation(fields: [productId], references: [id])
+  productName     String          // Snapshot
+  
+  qty             Float
+  costPrice       Float
+  amount          Float
+
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  @@index([invoiceId])
+  @@index([productId])
+}
+
+model Account {
+  id             String        @id @default(uuid())
+  accountName    String
+  bankName       String?
+  accountNumber  String?
+  openingBalance Float         @default(0)
+  currentBalance Float         @default(0)
+  notes          String?
+  isActive       Boolean       @default(true)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  ledgerTransactions LedgerTransaction[]
+  salesInvoices  SalesInvoice[]
+  purchaseInvoices PurchaseInvoice[]
+  expenses       Expense[]
+  salaries       SalaryPayment[]
+
+  @@index([accountName])
+}
+
+model LedgerTransaction {
+  id            String      @id @default(uuid())
+  accountId     String
+  account       Account     @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  
+  date          DateTime    @default(now())
+  referenceNo   String?     // Invoice No, Bill No, Receipt No
+  moduleType    String      // SALES_INVOICE, PURCHASE_INVOICE, EXPENSE, SALARY, TRANSFER, ADJUSTMENT
+  description   String?
+  
+  credit        Float       @default(0) // Money In
+  debit         Float       @default(0) // Money Out
+  balanceAfter  Float       @default(0) // Running Balance
+  
+  linkedId      String?     // ID of the source record (e.g., SalesInvoice.id)
+  createdBy     String?
+  
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([accountId])
+  @@index([date])
+  @@index([moduleType])
+  @@index([referenceNo])
+}
+
+model Expense {
+  id          String    @id @default(uuid())
+  date        DateTime  @default(now())
+  title       String    
+  category    String    // FUEL, TRAVEL, MATERIALS, SITE_EXPENSE, OFFICE, FOOD, MISC
+  amount      Float
+  payee       String?
+  reference   String?   // Bill No, Receipt No
+  notes       String?
+  receiptUrl  String?   
+  
+  accountId   String
+  account     Account   @relation(fields: [accountId], references: [id])
+  
+  workSiteId  String?
+  workSite    WorkSite? @relation(fields: [workSiteId], references: [id])
+
+  items       ExpenseItem[]
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([date])
+  @@index([category])
+  @@index([accountId])
+}
+
+model ExpenseItem {
+  id          String   @id @default(uuid())
+  expenseId   String
+  expense     Expense  @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  description String
+  qty         Float    @default(1)
+  rate        Float
+  amount      Float
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([expenseId])
+}
+
+model WorkSite {
+  id          String    @id @default(uuid())
+  name        String
+  customerId  String?
+  customer    Customer? @relation(fields: [customerId], references: [id])
+  location    String?
+  startDate   DateTime?
+  endDate     DateTime?
+  status      String    @default("PENDING") // PENDING, RUNNING, COMPLETED
+  budget      Float     @default(0)
+  notes       String?
+  isActive    Boolean   @default(true)
+  
+  expenses    Expense[]
+  workers     SiteWorker[]
+  workEntries SiteWorkEntry[]
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([name])
+  @@index([status])
+  @@index([customerId])
+}
+
+model Worker {
+  id           String    @id @default(uuid())
+  name         String
+  phone        String?
+  role         String    @default("Helper") // Main Worker, Helper
+  fullDayRate  Float     @default(0)
+  halfDayRate  Float     @default(0)
+  joinDate     DateTime  @default(now())
+  isActive     Boolean   @default(true)
+  
+  workSites    SiteWorker[]
+  workEntries  SiteWorkEntry[]
+  allowances   WorkerAllowance[]
+  deductions   WorkerDeduction[]
+  payments     SalaryPayment[]
+  
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([name])
+}
+
+model SiteWorker {
+  id         String   @id @default(uuid())
+  workSiteId String
+  workSite   WorkSite @relation(fields: [workSiteId], references: [id], onDelete: Cascade)
+  workerId   String
+  worker     Worker   @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  assignedAt DateTime @default(now())
+
+  @@unique([workSiteId, workerId])
+  @@index([workSiteId])
+  @@index([workerId])
+}
+
+model SiteWorkEntry {
+  id           String    @id @default(uuid())
+  workSiteId   String
+  workSite     WorkSite  @relation(fields: [workSiteId], references: [id], onDelete: Cascade)
+  workerId     String
+  worker       Worker    @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  
+  date         DateTime  @default(now())
+  workType     String    // FULL_DAY, HALF_DAY, OVERTIME
+  hours        Float?    // Optional overtime hours
+  rate         Float     // The rate applied
+  amount       Float     // Computed amount
+  notes        String?
+  
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([workSiteId])
+  @@index([workerId])
+  @@index([date])
+}
+
+model WorkerAllowance {
+  id        String   @id @default(uuid())
+  workerId  String
+  worker    Worker   @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  type      String   // TRAVEL, FOOD, BONUS, OTHER
+  amount    Float
+  date      DateTime @default(now())
+  remark    String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([workerId])
+  @@index([date])
+}
+
+model WorkerDeduction {
+  id        String   @id @default(uuid())
+  workerId  String
+  worker    Worker   @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  type      String   // ADVANCE, PENALTY, TOOL_RENT, LOAN
+  amount    Float
+  date      DateTime @default(now())
+  remark    String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([workerId])
+  @@index([date])
+}
+
+model SalaryPayment {
+  id                String    @id @default(uuid())
+  workerId          String
+  worker            Worker    @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  
+  amount            Float
+  date              DateTime  @default(now())
+  
+  accountId         String
+  account           Account   @relation(fields: [accountId], references: [id])
+  
+  notes             String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([workerId])
+  @@index([date])
+}
+
+model Setting {
+  id              String   @id @default(uuid())
+  companyName     String   @default("Power Volt")
+  companyAddress  String?
+  companyPhone    String?
+  companyEmail    String?
+  companyGstin    String?
+  invoicePrefix   String   @default("PV")
+  currencySymbol  String   @default("₹")
+  updatedAt       DateTime @updatedAt
+}

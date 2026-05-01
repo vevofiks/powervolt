@@ -1,0 +1,31 @@
+.staff-page {
+  padding-bottom: 20px;
+}
+
+.staff-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.rate-text {
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.staff-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-lg);
+}
+
+@media (max-width: 640px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,32 @@
+.product-form__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.product-form__divider {
+  height: 1px;
+  background: var(--color-border-light);
+  margin: 8px 0 16px;
+}
+
+.product-form__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border-light);
+}
+
+@media (max-width: 768px) {
+  .product-form__grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 480px) {
+  .product-form__grid {
+    grid-template-columns: 1fr;
+  }
+}

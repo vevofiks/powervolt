@@ -1,0 +1,235 @@
+.create-invoice {
+  padding-bottom: 40px;
+}
+
+.invoice-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.invoice-card {
+  margin-bottom: 0;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+}
+
+.items-card {
+  overflow-x: auto;
+}
+
+.items-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 16px;
+}
+
+.items-table th {
+  text-align: left;
+  padding: var(--spacing-sm) var(--spacing-md);
+  color: var(--color-text-muted);
+  font-size: var(--font-xs);
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.items-table td {
+  padding: var(--spacing-md);
+  vertical-align: top;
+}
+
+.item-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-background);
+  color: var(--color-text);
+}
+
+.product-cell {
+  position: relative;
+}
+
+.product-search-container {
+  position: relative;
+}
+
+.search-results {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-lg);
+  z-index: 100;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.search-item {
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.search-item:hover {
+  background: var(--color-primary-bg);
+}
+
+.search-item .p-name {
+  font-weight: 600;
+  font-size: var(--font-sm);
+}
+
+.search-item .p-price {
+  font-size: var(--font-xs);
+  color: var(--color-primary);
+}
+
+.search-item .p-stock {
+  font-size: var(--font-xs);
+  color: var(--color-text-muted);
+}
+
+.amount-cell {
+  font-weight: 600;
+  color: var(--color-text);
+  padding-top: 18px !important;
+}
+
+.remove-item {
+  background: none;
+  border: none;
+  color: var(--color-danger);
+  cursor: pointer;
+  font-size: 18px;
+  padding-top: 14px;
+}
+
+.add-item-btn {
+  margin-top: 8px;
+}
+
+.invoice-bottom {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+}
+
+.summary-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+}
+
+.summary-details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  padding: var(--spacing-lg);
+  background: var(--color-bg);
+  border-radius: var(--radius-sm);
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: var(--font-sm);
+}
+
+.discount-input {
+  width: 100px;
+  padding: 4px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  text-align: right;
+}
+
+.grand-total {
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 2px solid var(--color-border-light);
+  font-weight: 700;
+  font-size: var(--font-lg);
+  color: var(--color-primary);
+}
+
+.notes-section {
+  margin-top: var(--spacing-lg);
+}
+
+.invoice-actions {
+  margin-top: var(--spacing-lg);
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Customer Search Styles */
+.customer-search-results {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-lg);
+  z-index: 100;
+  max-height: 200px;
+  overflow-y: auto;
+  margin-top: 4px;
+}
+
+.search-result-item {
+  padding: 10px 16px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--color-border-light);
+  transition: background 0.2s;
+}
+
+.search-result-item:hover {
+  background: var(--color-primary-bg);
+}
+
+.res-name {
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--color-text);
+}
+
+.res-meta {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.input-error {
+  border-color: var(--color-danger) !important;
+  background: var(--color-danger-bg) !important;
+}
+
+.input-hint {
+  font-size: 10px;
+  margin-top: 2px;
+  font-weight: 500;
+}
+
+.text-danger {
+  color: var(--color-danger);
+}
+
+@media (max-width: 768px) {
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,83 @@
+/**
+ * Application-wide constants.
+ */
+const PAGINATION = {
+  DEFAULT_PAGE: 1,
+  DEFAULT_LIMIT: 20,
+  MAX_LIMIT: 100,
+};
+
+const SORT_ORDER = {
+  ASC: 'asc',
+  DESC: 'desc',
+};
+
+const INVOICE_STATUS = {
+  DRAFT: 'draft',
+  PENDING: 'pending',
+  PAID: 'paid',
+  CANCELLED: 'cancelled',
+};
+
+const EXPENSE_CATEGORY = {
+  MATERIALS: 'materials',
+  LABOUR: 'labour',
+  TRANSPORT: 'transport',
+  UTILITIES: 'utilities',
+  OTHER: 'other',
+};
+
+const LEDGER_TYPE = {
+  SALE_CREDIT: 'SALE_CREDIT',
+  PURCHASE_DEBIT: 'PURCHASE_DEBIT',
+  EXPENSE_DEBIT: 'EXPENSE_DEBIT',
+  SALARY_DEBIT: 'SALARY_DEBIT',
+  MANUAL_ADJUSTMENT: 'MANUAL_ADJUSTMENT',
+  TRANSFER: 'TRANSFER',
+};
+
+// Credit types add to balance, debit types subtract
+const CREDIT_TYPES = [LEDGER_TYPE.SALE_CREDIT, LEDGER_TYPE.MANUAL_ADJUSTMENT];
+const DEBIT_TYPES = [LEDGER_TYPE.PURCHASE_DEBIT, LEDGER_TYPE.EXPENSE_DEBIT, LEDGER_TYPE.SALARY_DEBIT];
+const PRODUCT_CATEGORY = {
+  WIRES: 'WIRES',
+  SWITCHES: 'SWITCHES',
+  LIGHTS: 'LIGHTS',
+  MOTORS: 'MOTORS',
+  TOOLS: 'TOOLS',
+  ACCESSORIES: 'ACCESSORIES',
+};
+
+const PRODUCT_UNIT = {
+  NOS: 'Nos',
+  MTR: 'Mtr',
+  KG: 'Kg',
+  BOX: 'Box',
+  SET: 'Set',
+  ROLL: 'Roll',
+  PAIR: 'Pair',
+};
+
+const STOCK_TYPE = {
+  PURCHASE_IN: 'PURCHASE_IN',
+  SALE_OUT: 'SALE_OUT',
+  ADJUSTMENT: 'ADJUSTMENT',
+  RETURN_IN: 'RETURN_IN',
+  DAMAGE_OUT: 'DAMAGE_OUT',
+};
+
+const LOW_STOCK_THRESHOLD = 5;
+
+module.exports = {
+  PAGINATION,
+  SORT_ORDER,
+  INVOICE_STATUS,
+  EXPENSE_CATEGORY,
+  LEDGER_TYPE,
+  CREDIT_TYPES,
+  DEBIT_TYPES,
+  PRODUCT_CATEGORY,
+  PRODUCT_UNIT,
+  STOCK_TYPE,
+  LOW_STOCK_THRESHOLD,
+};

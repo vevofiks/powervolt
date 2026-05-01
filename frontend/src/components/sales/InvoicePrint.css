@@ -1,0 +1,286 @@
+/* ═══════════════════════════════════════════════════════════════
+   Professional Tax Invoice Print Styles
+   Matching Reference Layout exactly.
+   ═══════════════════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap');
+
+:root {
+  --invoice-green: #16a34a;
+  --invoice-border: #059669;
+  --text-dark: #1e293b;
+  --text-muted: #64748b;
+}
+
+.invoice-print-container {
+  width: 210mm; /* A4 Width */
+  min-height: 297mm; /* A4 Height */
+  padding: 10mm;
+  margin: 0 auto;
+  background: white;
+  font-family: 'DM Sans', sans-serif;
+  color: var(--text-dark);
+  position: relative;
+  box-sizing: border-box;
+}
+
+/* Outer Border */
+.invoice-outer-border {
+  border: 2px solid var(--invoice-green);
+  height: 100%;
+  padding: 8mm;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header Section */
+.invoice-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.header-left {
+  flex: 1;
+}
+
+.header-left .logo {
+  width: 80px;
+  height: 80px;
+  margin-bottom: 10px;
+}
+
+.header-left .company-name {
+  font-size: 28px;
+  font-weight: 700;
+  color: #4338ca; /* Dark Blue from reference text */
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.header-left .company-info {
+  font-size: 11px;
+  line-height: 1.4;
+  margin-top: 5px;
+  color: #334155;
+}
+
+.header-right {
+  text-align: right;
+}
+
+.invoice-type-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--invoice-green);
+  margin: 0 0 20px 0;
+  letter-spacing: 1px;
+}
+
+.invoice-meta-table {
+  border-collapse: collapse;
+  margin-left: auto;
+}
+
+.invoice-meta-table td {
+  border: 1px solid #000;
+  padding: 4px 12px;
+  font-size: 12px;
+  text-align: left;
+}
+
+.invoice-meta-table .label {
+  background: #f8fafc;
+  font-weight: 600;
+  text-transform: uppercase;
+  width: 100px;
+}
+
+/* Bill To Section */
+.bill-to-section {
+  margin-bottom: 20px;
+  width: 50%;
+}
+
+.bill-to-header {
+  background: var(--invoice-green);
+  color: white;
+  padding: 4px 12px;
+  font-weight: 700;
+  font-size: 13px;
+  text-align: center;
+  margin-bottom: 8px;
+  border-radius: 2px;
+}
+
+.bill-to-details {
+  font-size: 12px;
+  line-height: 1.5;
+  padding-left: 5px;
+}
+
+.bill-to-details strong {
+  font-size: 14px;
+  display: block;
+  margin-bottom: 2px;
+  text-transform: uppercase;
+}
+
+/* Items Table */
+.items-table-wrapper {
+  flex: 1;
+}
+
+.invoice-items-table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1.5px solid #000;
+}
+
+.invoice-items-table th {
+  background: var(--invoice-green);
+  color: white;
+  padding: 8px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  border: 1px solid #000;
+  text-align: center;
+}
+
+.invoice-items-table td {
+  border: 1px solid #000;
+  padding: 8px 10px;
+  font-size: 12px;
+  height: 25px;
+}
+
+.col-center { text-align: center; }
+.col-right { text-align: right; }
+
+.empty-row td {
+  height: 30px;
+}
+
+/* Summary Section */
+.summary-container {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 32px; /* Added more space here */
+}
+
+.totals-table {
+  width: 300px;
+  border-collapse: collapse;
+  border: 1.5px solid #000;
+  border-top: none;
+}
+
+.totals-table td {
+  padding: 6px 12px;
+  font-size: 12px;
+  border: 1px solid #000;
+}
+
+.totals-table .label {
+  text-align: left;
+  color: #475569;
+}
+
+.totals-table .value {
+  text-align: right;
+  font-weight: 600;
+}
+
+.totals-table .grand-total-row {
+  background: #f8fafc;
+}
+
+.totals-table .grand-total-row td {
+  font-size: 15px;
+  font-weight: 700;
+  padding: 10px 12px;
+  border-top: 2px solid #000;
+}
+
+/* Bottom Section */
+.invoice-bottom {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 30px;
+  align-items: flex-end;
+}
+
+.bank-details {
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.bank-details h4 {
+  font-size: 13px;
+  margin-bottom: 5px;
+  text-decoration: underline;
+}
+
+.seal-area {
+  text-align: center;
+}
+
+.seal-img {
+  width: 100px;
+  opacity: 0.8;
+}
+
+.signature-area {
+  text-align: center;
+  min-width: 200px;
+}
+
+.signature-area p {
+  font-size: 12px;
+  margin-top: 50px;
+  border-top: 1px solid #000;
+  padding-top: 5px;
+  font-weight: 600;
+}
+
+/* Footer */
+.invoice-footer-note {
+  text-align: center;
+  margin-top: auto;
+  padding-top: 20px;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--text-dark);
+}
+
+/* Print Specifics */
+@media print {
+  @page {
+    size: A4;
+    margin: 0;
+  }
+  
+  body {
+    background: white;
+  }
+
+  .invoice-print-container {
+    width: 100%;
+    height: 100%;
+    padding: 10mm;
+    box-shadow: none;
+  }
+
+  /* Ensure colors print */
+  .invoice-outer-border {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  
+  .bill-to-header, .invoice-items-table th {
+    background-color: var(--invoice-green) !important;
+    color: white !important;
+    -webkit-print-color-adjust: exact;
+  }
+}

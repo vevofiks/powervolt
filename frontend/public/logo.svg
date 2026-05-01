@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
+  <!-- Black Circular Background -->
+  <circle cx="200" cy="200" r="190" fill="#000000" />
+  
+  <!-- Light Rays -->
+  <g fill="#FFFFFF">
+    <polygon points="200,40 215,80 185,80" />
+    <polygon points="120,70 145,100 120,110" />
+    <polygon points="280,70 280,110 255,100" />
+    <polygon points="70,160 110,150 110,170" />
+    <polygon points="330,160 290,170 290,150" />
+    <polygon points="120,250 145,220 120,210" />
+    <polygon points="280,250 280,210 255,220" />
+  </g>
+
+  <!-- Lightbulb Base -->
+  <g fill="#FFFFFF">
+    <path d="M150,160 C150,110 180,90 200,90 C220,90 250,110 250,160 C250,210 225,240 220,280 L180,280 C175,240 150,210 150,160 Z" />
+    <!-- Bulb Threading -->
+    <rect x="180" y="285" width="40" height="8" rx="2" />
+    <rect x="182" y="297" width="36" height="6" rx="2" />
+    <rect x="184" y="307" width="32" height="6" rx="2" />
+    <!-- Bulb Bottom -->
+    <path d="M188,317 L212,317 L205,325 L195,325 Z" />
+  </g>
+
+  <!-- Lightning Bolt Cutout (Black) -->
+  <polygon points="220,110 170,200 200,200 180,270 230,180 200,180" fill="#000000" />
+
+  <!-- Text -->
+  <path id="textPath" d="M 80 280 A 150 150 0 0 0 320 280" fill="transparent" />
+  <text fill="#FFFFFF" font-family="Arial, sans-serif" font-weight="bold" font-size="20" letter-spacing="1">
+    <textPath href="#textPath" startOffset="50%" text-anchor="middle">POWER VOLT ELECTRICAL ENGINEERING</textPath>
+  </text>
+</svg>
