@@ -10,6 +10,7 @@ import {
   HiOutlineCurrencyRupee,
   HiOutlineChartBar,
   HiOutlineCog,
+  HiOutlineCheckCircle,
 } from 'react-icons/hi';
 
 /**
@@ -23,6 +24,7 @@ export const NAV_ITEMS = [
   { label: 'Accounts', path: '/accounts', icon: HiOutlineCreditCard },
   { label: 'Expenses', path: '/expenses', icon: HiOutlineCash },
   { label: 'Work Sites', path: '/work-sites', icon: HiOutlineLocationMarker },
+  { label: 'Attendance', path: '/attendance', icon: HiOutlineCheckCircle },
   { label: 'Workers', path: '/workers', icon: HiOutlineUserGroup },
   { label: 'Salary', path: '/salary', icon: HiOutlineCurrencyRupee },
   { label: 'Reports', path: '/reports', icon: HiOutlineChartBar },

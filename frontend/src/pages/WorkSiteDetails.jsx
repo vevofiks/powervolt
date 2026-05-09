@@ -35,6 +35,8 @@ export default function WorkSiteDetails() {
     hours: '',
     rate: '',
     amount: '',
+    travelAllowance: '',
+    foodAllowance: '',
     notes: '' 
   });
   
@@ -85,9 +87,19 @@ export default function WorkSiteDetails() {
     setSubmitting(true);
     try {
       await workSiteApi.addWorkEntry(id, entryData);
-      toast.success('Work entry added');
+      toast.success('Work entry and allowances added');
       setIsEntryModalOpen(false);
-      setEntryData({ workerId: '', date: new Date().toISOString().split('T')[0], workType: 'FULL_DAY', hours: '', rate: '', amount: '', notes: '' });
+      setEntryData({ 
+        workerId: '', 
+        date: new Date().toISOString().split('T')[0], 
+        workType: 'FULL_DAY', 
+        hours: '', 
+        rate: '', 
+        amount: '', 
+        travelAllowance: '',
+        foodAllowance: '',
+        notes: '' 
+      });
       fetchDetails();
     } catch (err) {
       toast.error('Failed to add entry');
@@ -221,7 +233,12 @@ export default function WorkSiteDetails() {
                 columns={[
                   { key: 'date', label: 'Date', render: (val) => formatDate(val) },
                   { key: 'worker', label: 'Worker', render: (val) => val?.name },
-                  { key: 'workType', label: 'Type', render: (val) => <Badge>{val.replace('_', ' ')}</Badge> },
+                  { key: 'workType', label: 'Status', render: (val) => {
+                    if (val === 'FULL_DAY') return <Badge variant="success">Present</Badge>;
+                    if (val === 'HALF_DAY') return <Badge variant="warning">Half Day</Badge>;
+                    if (val === 'OVERTIME') return <Badge variant="primary">Overtime</Badge>;
+                    return <Badge>{val}</Badge>;
+                  }},
                   { key: 'amount', label: 'Amount', render: (val) => formatCurrency(val) },
                   { key: 'notes', label: 'Remarks', render: (val) => val || '—' }
                 ]}
@@ -282,7 +299,7 @@ export default function WorkSiteDetails() {
               value={entryData.workerId}
               onChange={e => setEntryData({...entryData, workerId: e.target.value})}
             />
-            <Input label="Date" type="date" required value={entryData.date} onChange={e => setEntryData({...entryData, date: e.target.value})} />
+            <Input label="Date" type="date" required value={entryData.date} max={new Date().toISOString().split('T')[0]} onChange={e => setEntryData({...entryData, date: e.target.value})} />
           </div>
           <div className="form-row">
             <Select 
@@ -303,6 +320,10 @@ export default function WorkSiteDetails() {
           <div className="form-row">
             <Input label="Calculated Rate (₹)" type="number" value={entryData.rate} readOnly />
             <Input label="Total Amount (₹)" type="number" required value={entryData.amount} onChange={e => setEntryData({...entryData, amount: e.target.value})} />
+          </div>
+          <div className="form-row">
+            <Input label="Travel Allowance (₹)" type="number" placeholder="0" value={entryData.travelAllowance} onChange={e => setEntryData({...entryData, travelAllowance: e.target.value})} />
+            <Input label="Food Allowance (₹)" type="number" placeholder="0" value={entryData.foodAllowance} onChange={e => setEntryData({...entryData, foodAllowance: e.target.value})} />
           </div>
           <Input label="Remarks" placeholder="Optional notes" value={entryData.notes} onChange={e => setEntryData({...entryData, notes: e.target.value})} />
           <div className="modal-actions">

@@ -11,9 +11,10 @@ import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
 import { workSiteApi } from '../api/workSites';
 import { customerApi } from '../api/customers';
+import { workerApi } from '../api/workers';
 import { formatDate } from '../utils/formatDate';
 import { formatCurrency } from '../utils/formatCurrency';
-import { HiOutlinePlus, HiOutlinePencil, HiOutlineSearch, HiOutlineEye } from 'react-icons/hi';
+import { HiOutlinePlus, HiOutlinePencil, HiOutlineSearch, HiOutlineEye, HiOutlineUserAdd, HiOutlineUsers } from 'react-icons/hi';
 import './WorkSites.css';
 
 const STATUS_OPTIONS = [
@@ -33,29 +34,31 @@ export default function WorkSites() {
   const [editingSite, setEditingSite] = useState(null);
 
   const [formData, setFormData] = useState({
-    name: '',
-    customerId: '',
-    customerName: '',
-    customerPhone: '',
-    location: '',
-    startDate: '',
-    endDate: '',
-    status: 'PENDING',
-    budget: '',
-    notes: ''
+    name: '', customerId: '', customerName: '', customerPhone: '', 
+    location: '', startDate: '', endDate: '', status: 'PENDING', 
+    budget: '', notes: ''
   });
+
+  const [isWorkerModalOpen, setIsWorkerModalOpen] = useState(false);
+  const [isViewWorkersOpen, setIsViewWorkersOpen] = useState(false);
+  const [selectedSite, setSelectedSite] = useState(null);
+  const [allWorkers, setAllWorkers] = useState([]);
+  const [selectedWorkerIds, setSelectedWorkerIds] = useState([]);
+  const [siteWorkers, setSiteWorkers] = useState([]);
 
   const fetchSites = useCallback(async () => {
     setLoading(true);
     try {
-      const [sitesRes, customersRes] = await Promise.all([
+      const [sitesRes, customersRes, workersRes] = await Promise.all([
         workSiteApi.getAll({ search: searchQuery }),
-        customerApi.getAll({ limit: 100 })
+        customerApi.getAll({ limit: 100 }),
+        workerApi.getAll({ limit: 100 })
       ]);
       setSites(sitesRes.data?.items || []);
       setCustomers(customersRes.data?.items || []);
+      setAllWorkers(workersRes.data?.items || []);
     } catch (err) {
-      toast.error('Failed to load work sites');
+      toast.error('Failed to load data');
     } finally {
       setLoading(false);
     }
@@ -104,6 +107,51 @@ export default function WorkSites() {
     }
   };
 
+  const handleAssignWorkers = async () => {
+    if (selectedWorkerIds.length === 0) return toast.error('Select at least one worker');
+    setSubmitting(true);
+    try {
+      await workSiteApi.assignWorkers(selectedSite.id, selectedWorkerIds);
+      toast.success('Workers assigned successfully');
+      setIsWorkerModalOpen(false);
+      setSelectedWorkerIds([]);
+      fetchSites();
+    } catch (err) {
+      toast.error('Assignment failed');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const openManageWorkers = async (site) => {
+    setSelectedSite(site);
+    setLoading(true);
+    try {
+      const res = await workSiteApi.getById(site.id);
+      const assignedIds = res.data.workers.map(w => w.workerId);
+      setSelectedWorkerIds(assignedIds);
+      setIsWorkerModalOpen(true);
+    } catch (err) {
+      toast.error('Failed to load site workers');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const openViewWorkers = async (site) => {
+    setSelectedSite(site);
+    setLoading(true);
+    try {
+      const res = await workSiteApi.getById(site.id);
+      setSiteWorkers(res.data.workers || []);
+      setIsViewWorkersOpen(true);
+    } catch (err) {
+      toast.error('Failed to load workers');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const resetForm = () => {
     setFormData({
       name: '', customerId: '', customerName: '', customerPhone: '', 
@@ -131,15 +179,16 @@ export default function WorkSites() {
     { key: 'location', label: 'Location' },
     { key: 'status', label: 'Status', render: (val) => getStatusBadge(val) },
     { key: 'budget', label: 'Budget', align: 'right', render: (val) => formatCurrency(val) },
-    { key: '_count', label: 'Summary', render: (val) => (
-      <div className="site-counts">
-        <span title="Expenses">{val?.expenses || 0} Exp</span>
-        <span title="Workers">{val?.workers || 0} Workers</span>
-      </div>
+    { key: '_count', label: 'Workers', render: (val, row) => (
+      <button className="site-workers-count" onClick={() => openViewWorkers(row)} title="Click to view workers">
+        <HiOutlineUsers className="mr-1" />
+        {val?.workers || 0} Staff
+      </button>
     )},
     { key: 'id', label: 'Actions', render: (_, row) => (
       <div className="action-buttons">
         <button className="action-btn primary" onClick={() => navigate(`/work-sites/${row.id}`)} title="View Details"><HiOutlineEye /></button>
+        <button className="action-btn text-blue" onClick={() => openManageWorkers(row)} title="Assign Staff"><HiOutlineUserAdd /></button>
         <button className="action-btn" onClick={() => handleEdit(row)} title="Edit"><HiOutlinePencil /></button>
       </div>
     )},
@@ -270,6 +319,52 @@ export default function WorkSites() {
             <Button type="submit" loading={submitting}>{editingSite ? 'Save Changes' : 'Create Project'}</Button>
           </div>
         </form>
+      </Modal>
+
+      {/* Assignment Modal */}
+      <Modal isOpen={isWorkerModalOpen} onClose={() => setIsWorkerModalOpen(false)} title={`Assign Staff to ${selectedSite?.name}`}>
+        <div className="worker-selection-list">
+          {allWorkers.map(w => (
+            <label key={w.id} className="worker-check-item">
+              <input 
+                type="checkbox" 
+                checked={selectedWorkerIds.includes(w.id)}
+                onChange={(e) => {
+                  if (e.target.checked) setSelectedWorkerIds([...selectedWorkerIds, w.id]);
+                  else setSelectedWorkerIds(selectedWorkerIds.filter(id => id !== w.id));
+                }}
+              />
+              <span>{w.name} ({w.role})</span>
+            </label>
+          ))}
+          {allWorkers.length === 0 && <p className="text-center p-4 text-muted">No workers found in database.</p>}
+        </div>
+        <div className="modal-actions">
+          <Button variant="secondary" onClick={() => setIsWorkerModalOpen(false)}>Cancel</Button>
+          <Button onClick={handleAssignWorkers} loading={submitting}>Save Assignments</Button>
+        </div>
+      </Modal>
+
+      {/* View Workers Modal */}
+      <Modal isOpen={isViewWorkersOpen} onClose={() => setIsViewWorkersOpen(false)} title={`Staff at ${selectedSite?.name}`}>
+        <div className="view-workers-list">
+          {siteWorkers.length === 0 ? (
+            <p className="empty-text">No staff assigned to this site.</p>
+          ) : (
+            siteWorkers.map(item => (
+              <div key={item.id} className="view-worker-item">
+                <div className="worker-avatar">{item.worker.name.charAt(0)}</div>
+                <div className="worker-info">
+                  <span className="worker-name">{item.worker.name}</span>
+                  <span className="worker-role">{item.worker.role}</span>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+        <div className="modal-actions">
+          <Button onClick={() => setIsViewWorkersOpen(false)}>Close</Button>
+        </div>
       </Modal>
     </div>
   );

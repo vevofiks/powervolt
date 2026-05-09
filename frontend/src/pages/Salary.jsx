@@ -134,7 +134,8 @@ export default function Salary() {
     { key: 'totalEarnings', label: 'Earnings', align: 'right', render: (val) => formatCurrency(val) },
     { key: 'totalAllowances', label: 'Allowances', align: 'right', render: (val) => <span className="text-green">+{formatCurrency(val)}</span> },
     { key: 'totalDeductions', label: 'Deductions', align: 'right', render: (val) => <span className="text-red">-{formatCurrency(val)}</span> },
-    { key: 'netPayable', label: 'Net Payable', align: 'right', render: (val) => <span className="font-bold">{formatCurrency(val)}</span> },
+    { key: 'totalPaid', label: 'Paid', align: 'right', render: (val) => <span className="text-blue">-{formatCurrency(val)}</span> },
+    { key: 'netPayable', label: 'Balance', align: 'right', render: (val) => <span className={`font-bold ${val > 0 ? 'text-primary' : ''}`}>{formatCurrency(val)}</span> },
     { key: 'id', label: 'Actions', align: 'right', render: (_, row) => (
       <div className="action-buttons">
         <button className="action-btn text-green" onClick={() => { setActionType('ALLOWANCE'); setSelectedWorker(row); setActionData({ type: 'TRAVEL', amount: '', remark: '', date: new Date().toISOString().split('T')[0] }); setIsActionModalOpen(true); }} title="Add Allowance"><HiOutlinePlusCircle /></button>
@@ -157,8 +158,8 @@ export default function Salary() {
       <div className="toolbar">
         <Card>
           <div className="filter-row">
-            <Input label="From" type="date" value={period.startDate} onChange={e => setPeriod({...period, startDate: e.target.value})} />
-            <Input label="To" type="date" value={period.endDate} onChange={e => setPeriod({...period, endDate: e.target.value})} />
+            <Input label="From" type="date" value={period.startDate} max={new Date().toISOString().split('T')[0]} onChange={e => setPeriod({...period, startDate: e.target.value})} />
+            <Input label="To" type="date" value={period.endDate} max={new Date().toISOString().split('T')[0]} onChange={e => setPeriod({...period, endDate: e.target.value})} />
             <Button variant="secondary" onClick={generateSheet} style={{ alignSelf: 'flex-end' }}>Calculate Sheet</Button>
           </div>
         </Card>
@@ -207,7 +208,7 @@ export default function Salary() {
               }
             />
             <Input label="Amount (₹) *" type="number" required value={actionData.amount} onChange={e => setActionData({...actionData, amount: e.target.value})} />
-            <Input label="Date" type="date" value={actionData.date} onChange={e => setActionData({...actionData, date: e.target.value})} />
+            <Input label="Date" type="date" value={actionData.date} max={new Date().toISOString().split('T')[0]} onChange={e => setActionData({...actionData, date: e.target.value})} />
             <Input label="Remark" value={actionData.remark} onChange={e => setActionData({...actionData, remark: e.target.value})} />
             <div className="modal-actions">
               <Button type="button" variant="secondary" onClick={() => setIsActionModalOpen(false)}>Cancel</Button>

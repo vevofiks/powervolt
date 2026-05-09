@@ -13,5 +13,6 @@ export const workSiteApi = {
   assignWorkers: (id, workerIds) => api.post(`${WORKSITE_URL}/${id}/assign-workers`, { workerIds }),
   removeWorker: (id, workerId) => api.delete(`${WORKSITE_URL}/${id}/workers/${workerId}`),
   addWorkEntry: (id, data) => api.post(`${WORKSITE_URL}/${id}/work-entries`, data),
+  addBulkWorkEntries: (id, entries) => api.post(`${WORKSITE_URL}/${id}/bulk-work-entries`, { entries }),
   deleteWorkEntry: (entryId) => api.delete(`${WORKSITE_URL}/work-entries/${entryId}`),
 };

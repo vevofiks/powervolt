@@ -10,7 +10,7 @@ import LoadingSkeleton from '../components/ui/LoadingSkeleton';
 import { customerApi } from '../api/customers';
 import { formatCurrency } from '../utils/formatCurrency';
 import { formatDate } from '../utils/formatDate';
-import { HiOutlineArrowLeft, HiOutlinePhone, HiOutlineLocationMarker, HiOutlineDocumentText, HiOutlineMail, HiOutlineUserCircle } from 'react-icons/hi';
+import { HiOutlineArrowLeft, HiOutlinePhone, HiOutlineLocationMarker, HiOutlineDocumentText, HiOutlineMail, HiOutlineUserCircle, HiOutlineCurrencyRupee } from 'react-icons/hi';
 import { RiWhatsappLine } from 'react-icons/ri';
 
 export default function CustomerDetails() {

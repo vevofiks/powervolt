@@ -15,6 +15,7 @@ import WorkSites from './pages/WorkSites';
 import WorkSiteDetails from './pages/WorkSiteDetails';
 import Workers from './pages/Workers';
 import WorkerDetails from './pages/WorkerDetails';
+import Attendance from './pages/Attendance';
 import Salary from './pages/Salary';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
@@ -50,6 +51,7 @@ export default function App() {
             <Route path="/expenses" element={<Expenses />} />
             <Route path="/work-sites" element={<WorkSites />} />
             <Route path="/work-sites/:id" element={<WorkSiteDetails />} />
+            <Route path="/attendance" element={<Attendance />} />
             <Route path="/workers" element={<Workers />} />
             <Route path="/workers/:id" element={<WorkerDetails />} />
             <Route path="/salary" element={<Salary />} />
