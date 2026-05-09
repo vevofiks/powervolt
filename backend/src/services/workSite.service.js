@@ -135,26 +135,176 @@ const removeWorker = async (siteId, workerId) => {
   });
 };
 
+/**
+ * Normalize a date string or object to UTC midnight (00:00:00.000Z)
+ */
+const normalizeDate = (d) => {
+  const dateStr = d ? (typeof d === 'string' ? d.split('T')[0] : d.toISOString().split('T')[0]) : new Date().toISOString().split('T')[0];
+  return new Date(dateStr + "T00:00:00.000Z");
+};
+
 const addWorkEntry = async (data) => {
-  return await prisma.siteWorkEntry.create({
-    data: {
-      workSiteId: data.workSiteId,
-      workerId: data.workerId,
-      date: data.date ? new Date(data.date) : new Date(),
-      workType: data.workType, // FULL_DAY, HALF_DAY, OVERTIME
-      hours: data.hours ? parseFloat(data.hours) : null,
-      rate: parseFloat(data.rate),
-      amount: parseFloat(data.amount),
-      notes: data.notes
+  const startOfDay = normalizeDate(data.date);
+  const endOfDay = new Date(startOfDay.getTime() + (24 * 60 * 60 * 1000) - 1);
+  const today = normalizeDate(new Date());
+
+  if (startOfDay > today) {
+    throw ApiError.badRequest('Cannot mark attendance for a future date');
+  }
+
+  return await prisma.$transaction(async (tx) => {
+    // 0. Check if entry already exists for this worker on this day
+    const existing = await tx.siteWorkEntry.findFirst({
+      where: {
+        workerId: data.workerId,
+        date: { gte: startOfDay, lte: endOfDay }
+      },
+      include: { workSite: { select: { name: true } } }
+    });
+
+    if (existing) {
+      throw ApiError.badRequest(`Attendance already marked for this worker on ${startOfDay.toISOString().split('T')[0]} at ${existing.workSite.name}`);
     }
+
+    // 1. Create the work entry
+    const entry = await tx.siteWorkEntry.create({
+      data: {
+        workSiteId: data.workSiteId,
+        workerId: data.workerId,
+        date: startOfDay,
+        workType: data.workType, 
+        hours: data.hours ? parseFloat(data.hours) : null,
+        rate: parseFloat(data.rate),
+        amount: parseFloat(data.amount),
+        notes: data.notes
+      },
+      include: { workSite: { select: { name: true } } }
+    });
+
+    // 2. Add Travel Allowance if provided
+    if (data.travelAllowance && parseFloat(data.travelAllowance) > 0) {
+      await tx.workerAllowance.create({
+        data: {
+          workerId: data.workerId,
+          type: 'TRAVEL',
+          amount: parseFloat(data.travelAllowance),
+          date: startOfDay,
+          remark: `Travel allowance for site: ${entry.workSite.name}`
+        }
+      });
+    }
+
+    // 3. Add Food Allowance if provided
+    if (data.foodAllowance && parseFloat(data.foodAllowance) > 0) {
+      await tx.workerAllowance.create({
+        data: {
+          workerId: data.workerId,
+          type: 'FOOD',
+          amount: parseFloat(data.foodAllowance),
+          date: startOfDay,
+          remark: `Food allowance for site: ${entry.workSite.name}`
+        }
+      });
+    }
+
+    return entry;
   });
 };
 
-const deleteWorkEntry = async (id) => {
-  return await prisma.siteWorkEntry.delete({ where: { id } });
+const addBulkWorkEntries = async (workSiteId, entries) => {
+  return await prisma.$transaction(async (tx) => {
+    const results = [];
+    const today = normalizeDate(new Date());
+
+    for (const data of entries) {
+      const startOfDay = normalizeDate(data.date);
+      const endOfDay = new Date(startOfDay.getTime() + (24 * 60 * 60 * 1000) - 1);
+
+      if (startOfDay > today) continue; // Skip future dates
+
+      // Check if entry already exists
+      const existing = await tx.siteWorkEntry.findFirst({
+        where: {
+          workerId: data.workerId,
+          date: { gte: startOfDay, lte: endOfDay }
+        }
+      });
+
+      if (existing) continue; // Skip if already marked
+
+      // 1. Create the work entry
+      const entry = await tx.siteWorkEntry.create({
+        data: {
+          workSiteId,
+          workerId: data.workerId,
+          date: startOfDay,
+          workType: data.workType,
+          hours: data.hours ? parseFloat(data.hours) : null,
+          rate: parseFloat(data.rate),
+          amount: parseFloat(data.amount),
+          notes: data.notes
+        },
+        include: { workSite: { select: { name: true } } }
+      });
+
+      // 2. Add Travel Allowance if provided
+      if (data.travelAllowance && parseFloat(data.travelAllowance) > 0) {
+        await tx.workerAllowance.create({
+          data: {
+            workerId: data.workerId,
+            type: 'TRAVEL',
+            amount: parseFloat(data.travelAllowance),
+            date: startOfDay,
+            remark: `Travel allowance for site: ${entry.workSite.name}`
+          }
+        });
+      }
+
+      // 3. Add Food Allowance if provided
+      if (data.foodAllowance && parseFloat(data.foodAllowance) > 0) {
+        await tx.workerAllowance.create({
+          data: {
+            workerId: data.workerId,
+            type: 'FOOD',
+            amount: parseFloat(data.foodAllowance),
+            date: startOfDay,
+            remark: `Food allowance for site: ${entry.workSite.name}`
+          }
+        });
+      }
+      results.push(entry);
+    }
+    return results;
+  });
+};
+
+const deleteWorkEntry = async (entryId) => {
+  return await prisma.$transaction(async (tx) => {
+    const entry = await tx.siteWorkEntry.findUnique({
+      where: { id: entryId },
+      include: { workSite: { select: { name: true } } }
+    });
+    if (!entry) throw ApiError.notFound('Work entry not found');
+
+    // Delete related allowances (TRAVEL/FOOD) that were created for this entry.
+    // Match by workerId and either exact date or remark containing site name.
+    await tx.workerAllowance.deleteMany({
+      where: {
+        workerId: entry.workerId,
+        type: { in: ['TRAVEL', 'FOOD'] },
+        OR: [
+          { date: entry.date },
+          { remark: { contains: entry.workSite?.name || '', mode: 'insensitive' } }
+        ]
+      }
+    });
+
+    await tx.siteWorkEntry.delete({ where: { id: entryId } });
+    return true;
+  });
 };
 
 module.exports = { 
   getAll, getById, create, update, remove, 
-  assignWorkers, removeWorker, addWorkEntry, deleteWorkEntry 
+  assignWorkers, removeWorker, addWorkEntry, addBulkWorkEntries, deleteWorkEntry 
 };

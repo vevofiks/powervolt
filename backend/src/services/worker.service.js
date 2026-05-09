@@ -51,13 +51,27 @@ const getById = async (id) => {
 
 const create = async (data) => {
   if (!data.name) throw ApiError.badRequest('Worker name is required');
-  return await prisma.worker.create({ data });
+  
+  const sanitizedData = {
+    ...data,
+    fullDayRate: data.fullDayRate ? parseFloat(data.fullDayRate) : 0,
+    halfDayRate: data.halfDayRate ? parseFloat(data.halfDayRate) : 0,
+    joinDate: data.joinDate ? new Date(data.joinDate) : new Date(),
+  };
+
+  return await prisma.worker.create({ data: sanitizedData });
 };
 
 const update = async (id, data) => {
   const existing = await prisma.worker.findUnique({ where: { id } });
   if (!existing) throw ApiError.notFound('Worker not found');
-  return await prisma.worker.update({ where: { id }, data });
+
+  const sanitizedData = { ...data };
+  if (data.fullDayRate !== undefined) sanitizedData.fullDayRate = parseFloat(data.fullDayRate);
+  if (data.halfDayRate !== undefined) sanitizedData.halfDayRate = parseFloat(data.halfDayRate);
+  if (data.joinDate !== undefined) sanitizedData.joinDate = new Date(data.joinDate);
+
+  return await prisma.worker.update({ where: { id }, data: sanitizedData });
 };
 
 const remove = async (id) => {

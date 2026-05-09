@@ -28,16 +28,16 @@ const getProfitLoss = async (startDate, endDate) => {
       _sum: { amount: true }
     }),
     // Payroll
-    prisma.salary.aggregate({
-      where: startDate || endDate ? { paidDate: { gte: new Date(startDate), lte: new Date(endDate) } } : {},
-      _sum: { netPayable: true }
+    prisma.salaryPayment.aggregate({
+      where,
+      _sum: { amount: true }
     })
   ]);
 
   const revenue = sales._sum.totalAmount || 0;
   const grossProfit = sales._sum.profit || 0;
   const purchaseCost = purchases._sum.totalAmount || 0;
-  const operationalExpenses = (expenses._sum.amount || 0) + (salaries._sum.netPayable || 0);
+  const operationalExpenses = (expenses._sum.amount || 0) + (salaries._sum.amount || 0);
   const netProfit = grossProfit - operationalExpenses;
 
   return {
@@ -48,7 +48,7 @@ const getProfitLoss = async (startDate, endDate) => {
     netProfit,
     expenseBreakdown: {
       materials: expenses._sum.amount || 0, // Simplified for now
-      salaries: salaries._sum.netPayable || 0
+      salaries: salaries._sum.amount || 0
     }
   };
 };

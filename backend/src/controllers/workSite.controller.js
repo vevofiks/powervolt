@@ -84,7 +84,16 @@ const deleteWorkEntry = async (req, res, next) => {
   }
 };
 
+const addBulkWorkEntries = async (req, res, next) => {
+  try {
+    const data = await workSiteService.addBulkWorkEntries(req.params.id, req.body.entries);
+    res.status(201).json(ApiResponse.created(data, 'Bulk work entries added successfully'));
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = { 
   getAll, getById, create, update, remove, 
-  assignWorkers, removeWorker, addWorkEntry, deleteWorkEntry 
+  assignWorkers, removeWorker, addWorkEntry, addBulkWorkEntries, deleteWorkEntry 
 };

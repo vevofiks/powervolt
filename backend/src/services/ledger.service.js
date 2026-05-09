@@ -34,17 +34,23 @@ const recordTransaction = async (params, tx) => {
     if (!account) throw ApiError.notFound('Account not found');
     if (!account.isActive) throw ApiError.badRequest('Cannot transact on an inactive account');
 
-    // 2. Calculate balance change
-    const balanceChange = credit - debit;
-    const newBalance = account.currentBalance + balanceChange;
+    // 2. Insufficient Balance Check (only for debits)
+    if (debit > 0 && account.currentBalance < debit) {
+      throw ApiError.badRequest(`Insufficient balance in ${account.accountName}. Current: ₹${account.currentBalance}, Required: ₹${debit}`);
+    }
 
-    // 3. Update Account Balance
-    await client.account.update({
+    // 3. Calculate balance change
+    const balanceChange = credit - debit;
+
+    // 4. Update Account Balance Atomically
+    const updatedAccount = await client.account.update({
       where: { id: accountId },
-      data: { currentBalance: newBalance }
+      data: { currentBalance: { increment: balanceChange } }
     });
 
-    // 4. Create Ledger Transaction Record
+    const newBalance = updatedAccount.currentBalance;
+
+    // 5. Create Ledger Transaction Record
     return await client.ledgerTransaction.create({
       data: {
         accountId,
