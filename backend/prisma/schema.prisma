@@ -84,7 +84,7 @@ model SalesInvoice {
   invoiceType   String             @default("NON_GST") // GST, NON_GST
   
   customerId      String?
-  customer        Customer?          @relation(fields: [customerId], references: [id])
+  customer       Customer?          @relation(fields: [customerId], references: [id])
   customerName    String?
   customerPhone   String?
   customerGstin   String?
