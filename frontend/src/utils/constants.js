@@ -17,18 +17,18 @@ import {
  * Sidebar navigation items.
  */
 export const NAV_ITEMS = [
-  { label: 'Dashboard', path: '/', icon: HiOutlineHome },
-  { label: 'Sales Invoice', path: '/sales-invoice', icon: HiOutlineDocumentText },
-  { label: 'Customers', path: '/customers', icon: HiOutlineUserGroup },
-  { label: 'Products', path: '/products', icon: HiOutlineCube },
-  { label: 'Accounts', path: '/accounts', icon: HiOutlineCreditCard },
-  { label: 'Expenses', path: '/expenses', icon: HiOutlineCash },
-  { label: 'Work Sites', path: '/work-sites', icon: HiOutlineLocationMarker },
-  { label: 'Attendance', path: '/attendance', icon: HiOutlineCheckCircle },
-  { label: 'Workers', path: '/workers', icon: HiOutlineUserGroup },
-  { label: 'Salary', path: '/salary', icon: HiOutlineCurrencyRupee },
-  { label: 'Reports', path: '/reports', icon: HiOutlineChartBar },
-  { label: 'Settings', path: '/settings', icon: HiOutlineCog },
+  { label: 'Dashboard', path: '/admin', icon: HiOutlineHome },
+  { label: 'Sales Invoice', path: '/admin/sales-invoice', icon: HiOutlineDocumentText },
+  { label: 'Customers', path: '/admin/customers', icon: HiOutlineUserGroup },
+  { label: 'Products', path: '/admin/products', icon: HiOutlineCube },
+  { label: 'Accounts', path: '/admin/accounts', icon: HiOutlineCreditCard },
+  { label: 'Expenses', path: '/admin/expenses', icon: HiOutlineCash },
+  { label: 'Work Sites', path: '/admin/work-sites', icon: HiOutlineLocationMarker },
+  { label: 'Attendance', path: '/admin/attendance', icon: HiOutlineCheckCircle },
+  { label: 'Workers', path: '/admin/workers', icon: HiOutlineUserGroup },
+  { label: 'Salary', path: '/admin/salary', icon: HiOutlineCurrencyRupee },
+  { label: 'Reports', path: '/admin/reports', icon: HiOutlineChartBar },
+  { label: 'Settings', path: '/admin/settings', icon: HiOutlineCog },
 ];
 
 /**

@@ -7,12 +7,11 @@ const ApiError = require('../utils/ApiError');
 const { buildPagination } = require('../utils/helpers');
 
 /**
- * Record a stock movement and update product stock atomically.
+ * Record a stock movement and update product stock.
  * @param {object} data - { productId, type, quantity, reference, remark, date }
- * @param {object} tx - Optional Prisma transaction client
  * @returns {object} The created stock history entry
  */
-const recordMovement = async ({ productId, type, quantity, reference, remark, date }, tx) => {
+const recordMovement = async ({ productId, type, quantity, reference, remark, date }) => {
   if (quantity <= 0) {
     throw ApiError.badRequest('Quantity must be greater than 0');
   }
@@ -27,43 +26,38 @@ const recordMovement = async ({ productId, type, quantity, reference, remark, da
     stockChange = quantity;
   }
 
-  const execute = async (client) => {
-    const product = await client.product.findUnique({ where: { id: productId } });
-    if (!product) {
-      throw ApiError.notFound('Product not found');
-    }
-
-    const newStock = product.stockQty + stockChange;
-
-    if (outTypes.includes(type) && newStock < 0) {
-      throw ApiError.badRequest(`Insufficient stock for ${product.productName}. Available: ${product.stockQty} ${product.unit}`);
-    }
-
-    await client.product.update({
-      where: { id: productId },
-      data: { stockQty: newStock },
-    });
-
-    const entry = await client.stockHistory.create({
-      data: {
-        productId,
-        type,
-        quantity: Math.abs(quantity),
-        stockAfter: newStock,
-        reference: reference || null,
-        remark: remark || null,
-        date: date ? new Date(date) : new Date(),
-      },
-    });
-
-    return entry;
-  };
-
-  if (tx) {
-    return await execute(tx);
+  // 1. Fetch product and verify
+  const product = await prisma.product.findUnique({ where: { id: productId } });
+  if (!product) {
+    throw ApiError.notFound('Product not found');
   }
 
-  return await prisma.$transaction(async (t) => await execute(t));
+  const newStock = product.stockQty + stockChange;
+
+  if (outTypes.includes(type) && newStock < 0) {
+    throw ApiError.badRequest(`Insufficient stock for ${product.productName}. Available: ${product.stockQty} ${product.unit}`);
+  }
+
+  // 2. Update Product Stock
+  await prisma.product.update({
+    where: { id: productId },
+    data: { stockQty: newStock },
+  });
+
+  // 3. Create Stock History Entry
+  const entry = await prisma.stockHistory.create({
+    data: {
+      productId,
+      type,
+      quantity: Math.abs(quantity),
+      stockAfter: newStock,
+      reference: reference || null,
+      remark: remark || null,
+      date: date ? new Date(date) : new Date(),
+    },
+  });
+
+  return entry;
 };
 
 /**

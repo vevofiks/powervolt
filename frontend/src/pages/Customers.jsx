@@ -88,7 +88,7 @@ export default function Customers() {
     { key: '_count', label: 'Invoices', align: 'center', render: (val) => val?.salesInvoices || 0 },
     { key: 'id', label: 'Actions', align: 'right', render: (id, row) => (
       <div className="action-buttons">
-        <button className="action-btn primary" onClick={() => navigate(`/customers/${id}`)} title="View Profile"><HiOutlineEye /></button>
+        <button className="action-btn primary" onClick={() => navigate(`/admin/customers/${id}`)} title="View Profile"><HiOutlineEye /></button>
         <button className="action-btn" onClick={() => { setEditingCustomer(row); setIsModalOpen(true); }} title="Edit"><HiOutlinePencil /></button>
         <button className="action-btn danger" onClick={() => handleDelete(id)} title="Delete"><HiOutlineTrash /></button>
       </div>

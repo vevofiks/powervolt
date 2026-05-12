@@ -37,7 +37,7 @@ export default function AccountDetails() {
       setAccount(res.data);
     } catch (err) {
       toast.error(err.message || 'Failed to load account');
-      navigate('/accounts');
+      navigate('/admin/accounts');
     } finally {
       setLoading(false);
     }
@@ -71,7 +71,7 @@ export default function AccountDetails() {
         subtitle={`${account.bankName || 'Personal'} — ${account.accountNumber || 'N/A'}`}
         actionLabel="Back to Accounts"
         actionIcon={HiOutlineChevronLeft}
-        onAction={() => navigate('/accounts')}
+        onAction={() => navigate('/admin/accounts')}
         variant="secondary"
       />
 

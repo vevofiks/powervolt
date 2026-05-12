@@ -168,7 +168,7 @@ export default function Accounts() {
     )},
     { key: 'id', label: 'Actions', render: (_val, row) => (
       <div className="accounts__actions">
-        <button className="accounts__action-btn" title="View Details" onClick={() => navigate(`/accounts/${row.id}`)}>
+        <button className="accounts__action-btn" title="View Details" onClick={() => navigate(`/admin/accounts/${row.id}`)}>
           <HiOutlineEye />
         </button>
         <button className="accounts__action-btn" title="Edit" onClick={() => { setSelectedAccount(row); setShowEditModal(true); }}>

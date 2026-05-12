@@ -26,7 +26,7 @@ export default function CustomerDetails() {
       setCustomer(res.data);
     } catch (err) {
       toast.error('Failed to load customer details');
-      navigate('/customers');
+      navigate('/admin/customers');
     } finally {
       setLoading(false);
     }
@@ -45,7 +45,7 @@ export default function CustomerDetails() {
     { key: 'invoiceType', label: 'Type', render: (val) => <Badge variant={val === 'GST' ? 'primary' : 'secondary'}>{val}</Badge> },
     { key: 'totalAmount', label: 'Amount', align: 'right', render: (val) => formatCurrency(val) },
     { key: 'id', label: 'Actions', align: 'right', render: (id) => (
-      <Button size="sm" variant="secondary" onClick={() => navigate(`/sales-invoice`)}>View</Button>
+      <Button size="sm" variant="secondary" onClick={() => navigate(`/admin/sales-invoice`)}>View</Button>
     )},
   ];
 
@@ -56,7 +56,7 @@ export default function CustomerDetails() {
         subtitle="Customer Profile & Transaction History"
         actionLabel="Back to List"
         actionIcon={HiOutlineArrowLeft}
-        onAction={() => navigate('/customers')}
+        onAction={() => navigate('/admin/customers')}
       />
 
       <div className="grid-3" style={{ marginBottom: '24px' }}>

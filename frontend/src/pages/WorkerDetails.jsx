@@ -31,7 +31,7 @@ export default function WorkerDetails() {
       setLedger(ledgerRes.data);
     } catch (err) {
       toast.error('Failed to load worker details');
-      navigate('/workers');
+      navigate('/admin/workers');
     } finally {
       setLoading(false);
     }
@@ -51,7 +51,7 @@ export default function WorkerDetails() {
         subtitle={`${worker.role} | Joined: ${formatDate(worker.joinDate)}`}
         actionLabel="Back to Workers"
         actionIcon={HiOutlineArrowLeft}
-        onAction={() => navigate('/workers')}
+        onAction={() => navigate('/admin/workers')}
       >
         <Button variant="secondary" icon={HiOutlinePrinter} onClick={() => window.print()}>Print Ledger</Button>
       </PageHeader>

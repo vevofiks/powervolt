@@ -183,7 +183,7 @@ export default function CreateSalesInvoice() {
     try {
       await salesInvoiceApi.create(invoice);
       toast.success('Invoice created successfully');
-      navigate('/sales-invoice');
+      navigate('/admin/sales-invoice');
     } catch (err) {
       toast.error(err.message || 'Failed to create invoice');
     } finally {
@@ -198,7 +198,7 @@ export default function CreateSalesInvoice() {
         subtitle="Generate a new GST or Non-GST invoice"
         actionLabel="Back to History"
         actionIcon={HiOutlineArrowLeft}
-        onAction={() => navigate('/sales-invoice')}
+        onAction={() => navigate('/admin/sales-invoice')}
       />
 
       <form onSubmit={handleSubmit}>

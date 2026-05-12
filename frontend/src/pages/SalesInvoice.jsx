@@ -86,7 +86,7 @@ export default function SalesInvoice() {
         subtitle="Manage your sales history and billing"
         actionLabel="Create Invoice"
         actionIcon={HiOutlinePlus}
-        onAction={() => navigate('/sales-invoice/create')}
+        onAction={() => navigate('/admin/sales-invoice/create')}
       />
 
       <div className="toolbar">

@@ -10,6 +10,10 @@ const { errorHandler } = require('./middlewares/errorHandler');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+
+const compression = require('compression');
+app.use(compression());
+
 // ─────────────────────────────────────────────────────────────
 // Allowed Frontend Origins
 // ─────────────────────────────────────────────────────────────
@@ -47,7 +51,29 @@ app.use(
   })
 );
 
-app.use(morgan('dev'));
+// ─── Performance Logging Middleware ───────────────────────────
+app.use((req, res, next) => {
+  const start = process.hrtime();
+  
+  res.on('finish', () => {
+    const elapsed = process.hrtime(start);
+    const durationInMs = (elapsed[0] * 1000 + elapsed[1] / 1e6).toFixed(3);
+    
+    // Log with color based on status
+    let statusColor = '\x1b[32m'; // Green
+    if (res.statusCode >= 400) statusColor = '\x1b[33m'; // Yellow
+    if (res.statusCode >= 500) statusColor = '\x1b[31m'; // Red
+    
+    console.log(
+      `[\x1b[36m${new Date().toLocaleTimeString()}\x1b[0m] ` +
+      `${req.method} ${req.originalUrl} ` +
+      `${statusColor}${res.statusCode}\x1b[0m ` +
+      `\x1b[35m${durationInMs}ms\x1b[0m`
+    );
+  });
+  next();
+});
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

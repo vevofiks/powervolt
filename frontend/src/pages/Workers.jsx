@@ -110,7 +110,7 @@ export default function Workers() {
     { key: 'joinDate', label: 'Joined', render: (val) => formatDate(val) },
     { key: 'id', label: 'Actions', render: (_, row) => (
       <div className="action-buttons">
-        <button className="action-btn primary" onClick={() => navigate(`/workers/${row.id}`)} title="View Ledger"><HiOutlineEye /></button>
+        <button className="action-btn primary" onClick={() => navigate(`/admin/workers/${row.id}`)} title="View Ledger"><HiOutlineEye /></button>
         <button className="action-btn" onClick={() => handleEdit(row)} title="Edit"><HiOutlinePencil /></button>
       </div>
     )},
@@ -138,7 +138,7 @@ export default function Workers() {
             />
           </div>
         </div>
-        <Button variant="secondary" icon={HiOutlineCalendar} onClick={() => navigate('/salary')}>
+        <Button variant="secondary" icon={HiOutlineCalendar} onClick={() => navigate('/admin/salary')}>
           Salary Sheet
         </Button>
       </div>

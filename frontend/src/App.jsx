@@ -19,45 +19,39 @@ import Attendance from './pages/Attendance';
 import Salary from './pages/Salary';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
+import LandingPage from './pages/landing/LandingPage';
 
 export default function App() {
   return (
     <ErrorBoundary>
       <BrowserRouter>
-        <Toaster
-          position="top-right"
-          toastOptions={{
-            duration: 3000,
-            style: {
-              background: '#fff',
-              color: '#1e293b',
-              borderRadius: '12px',
-              boxShadow: '0 10px 15px -3px rgba(0,0,0,0.08)',
-            },
-            success: { iconTheme: { primary: '#16a34a', secondary: '#fff' } },
-            error: { iconTheme: { primary: '#ef4444', secondary: '#fff' } },
-          }}
-        />
+        <Toaster position="top-right" />
         <Routes>
-          <Route element={<AppLayout />}>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/sales-invoice" element={<SalesInvoice />} />
-            <Route path="/sales-invoice/create" element={<CreateSalesInvoice />} />
-            <Route path="/customers" element={<Customers />} />
-            <Route path="/customers/:id" element={<CustomerDetails />} />
-            <Route path="/products" element={<Products />} />
-            <Route path="/accounts" element={<Accounts />} />
-            <Route path="/accounts/:id" element={<AccountDetails />} />
-            <Route path="/expenses" element={<Expenses />} />
-            <Route path="/work-sites" element={<WorkSites />} />
-            <Route path="/work-sites/:id" element={<WorkSiteDetails />} />
-            <Route path="/attendance" element={<Attendance />} />
-            <Route path="/workers" element={<Workers />} />
-            <Route path="/workers/:id" element={<WorkerDetails />} />
-            <Route path="/salary" element={<Salary />} />
-            <Route path="/reports" element={<Reports />} />
-            <Route path="/settings" element={<Settings />} />
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/admin">
+            <Route element={<AppLayout />}>
+              <Route index element={<Dashboard />} />
+              <Route path="sales-invoice" element={<SalesInvoice />} />
+              <Route path="sales-invoice/create" element={<CreateSalesInvoice />} />
+              <Route path="customers" element={<Customers />} />
+              <Route path="customers/:id" element={<CustomerDetails />} />
+              <Route path="products" element={<Products />} />
+              <Route path="accounts" element={<Accounts />} />
+              <Route path="accounts/:id" element={<AccountDetails />} />
+              <Route path="expenses" element={<Expenses />} />
+              <Route path="work-sites" element={<WorkSites />} />
+              <Route path="work-sites/:id" element={<WorkSiteDetails />} />
+              <Route path="attendance" element={<Attendance />} />
+              <Route path="workers" element={<Workers />} />
+              <Route path="staffs" element={<Workers />} />
+              <Route path="workers/:id" element={<WorkerDetails />} />
+              <Route path="salary" element={<Salary />} />
+              <Route path="reports" element={<Reports />} />
+              <Route path="settings" element={<Settings />} />
+              <Route path="*" element={<div style={{ padding: 20 }}>Page Not Found</div>} />
+            </Route>
           </Route>
+          <Route path="*" element={<LandingPage />} />
         </Routes>
       </BrowserRouter>
     </ErrorBoundary>

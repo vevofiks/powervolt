@@ -49,10 +49,10 @@ export default function Dashboard() {
   ];
 
   const quickActions = [
-    { label: 'Create Sale', path: '/sales-invoice/create', icon: HiOutlineTrendingUp, color: 'green' },
-    { label: 'Add Expense', path: '/expenses', icon: HiOutlineTrendingDown, color: 'orange' },
-    { label: 'Purchase Bill', path: '/purchase-invoice/create', icon: HiOutlineOfficeBuilding, color: 'blue' },
-    { label: 'Staff Salary', path: '/salary', icon: HiOutlineCurrencyRupee, color: 'purple' },
+    { label: 'Create Sale', path: '/admin/sales-invoice/create', icon: HiOutlineTrendingUp, color: 'green' },
+    { label: 'Add Expense', path: '/admin/expenses', icon: HiOutlineTrendingDown, color: 'orange' },
+    { label: 'Purchase Bill', path: '/admin/purchase-invoice/create', icon: HiOutlineOfficeBuilding, color: 'blue' },
+    { label: 'Staff Salary', path: '/admin/salary', icon: HiOutlineCurrencyRupee, color: 'purple' },
   ];
 
   return (

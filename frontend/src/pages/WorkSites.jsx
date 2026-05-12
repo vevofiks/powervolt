@@ -187,7 +187,7 @@ export default function WorkSites() {
     )},
     { key: 'id', label: 'Actions', render: (_, row) => (
       <div className="action-buttons">
-        <button className="action-btn primary" onClick={() => navigate(`/work-sites/${row.id}`)} title="View Details"><HiOutlineEye /></button>
+        <button className="action-btn primary" onClick={() => navigate(`/admin/work-sites/${row.id}`)} title="View Details"><HiOutlineEye /></button>
         <button className="action-btn text-blue" onClick={() => openManageWorkers(row)} title="Assign Staff"><HiOutlineUserAdd /></button>
         <button className="action-btn" onClick={() => handleEdit(row)} title="Edit"><HiOutlinePencil /></button>
       </div>

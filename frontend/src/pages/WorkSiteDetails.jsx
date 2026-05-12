@@ -52,7 +52,7 @@ export default function WorkSiteDetails() {
       setAllWorkers(workersRes.data?.items || []);
     } catch (err) {
       toast.error('Failed to load site details');
-      navigate('/work-sites');
+      navigate('/admin/work-sites');
     } finally {
       setLoading(false);
     }
@@ -152,7 +152,7 @@ export default function WorkSiteDetails() {
         subtitle={`Client: ${site.customer?.name || 'Walk-in'} | Location: ${site.location || 'N/A'}`}
         actionLabel="Back to Sites"
         actionIcon={HiOutlineArrowLeft}
-        onAction={() => navigate('/work-sites')}
+        onAction={() => navigate('/admin/work-sites')}
       />
 
       <div className="tabs-navigation">

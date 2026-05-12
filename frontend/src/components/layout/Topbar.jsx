@@ -1,4 +1,4 @@
-import { HiOutlineMenu, HiOutlineBell, HiOutlineSearch } from 'react-icons/hi';
+import { HiOutlineMenu, HiOutlineBell } from 'react-icons/hi';
 import SearchBar from '../ui/SearchBar';
 import './Topbar.css';
 
