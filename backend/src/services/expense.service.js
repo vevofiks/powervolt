@@ -18,7 +18,7 @@ const getAll = async (query = {}) => {
   if (query.category) where.category = query.category;
   if (query.accountId) where.accountId = query.accountId;
   if (query.workSiteId) where.workSiteId = query.workSiteId;
-  
+
   if (query.startDate || query.endDate) {
     where.date = {};
     if (query.startDate) where.date.gte = new Date(query.startDate);
@@ -34,20 +34,20 @@ const getAll = async (query = {}) => {
     ];
   }
 
-  const [items, total] = await Promise.all([
-    prisma.expense.findMany({
-      where,
-      include: {
-        account: { select: { accountName: true } },
-        workSite: { select: { name: true } },
-        items: true
-      },
-      orderBy: { date: 'desc' },
-      skip,
-      take: limit,
-    }),
-    prisma.expense.count({ where }),
-  ]);
+  // Sequential queries for serverless stability
+  const items = await prisma.expense.findMany({
+    where,
+    include: {
+      account: { select: { accountName: true } },
+      workSite: { select: { name: true } },
+      items: true
+    },
+    orderBy: { date: 'desc' },
+    skip,
+    take: limit,
+  });
+
+  const total = await prisma.expense.count({ where });
 
   return { items, pagination: buildPagination(total, page, limit) };
 };
@@ -65,7 +65,7 @@ const getById = async (id) => {
 };
 
 /**
- * Record a new expense.
+ * Record a new expense using sequential direct queries (no transactions).
  */
 const create = async (data) => {
   const { date, title, category, amount, payee, reference, notes, receiptUrl, accountId, workSiteId } = data;
@@ -74,58 +74,54 @@ const create = async (data) => {
   if (!amount || amount <= 0) throw ApiError.badRequest('Valid expense amount is required');
   if (!title) throw ApiError.badRequest('Expense title is required');
 
-  return await prisma.$transaction(async (tx) => {
-    // 1. Create Expense record
-    const expense = await tx.expense.create({
-      data: {
-        date: date ? new Date(date) : new Date(),
-        title,
-        category,
-        amount: parseFloat(amount),
-        payee,
-        reference,
-        notes,
-        receiptUrl,
-        accountId,
-        workSiteId: workSiteId || null,
-        items: data.items && data.items.length > 0 ? {
-          create: data.items.map(item => ({
-            description: item.description,
-            qty: parseFloat(item.qty) || 1,
-            rate: parseFloat(item.rate) || 0,
-            amount: parseFloat(item.amount) || 0
-          }))
-        } : undefined
-      },
-      include: { items: true }
-    });
-
-    // 2. Record Ledger Transaction (Debit)
-    await ledgerService.recordTransaction({
+  // 1. Create Expense record
+  const expense = await prisma.expense.create({
+    data: {
+      date: date ? new Date(date) : new Date(),
+      title,
+      category,
+      amount: parseFloat(amount),
+      payee,
+      reference,
+      notes,
+      receiptUrl,
       accountId,
-      date: date || new Date(),
-      referenceNo: reference || expense.id,
-      moduleType: 'EXPENSE',
-      description: `Expense: ${title} (${category})`,
-      debit: parseFloat(amount),
-      linkedId: expense.id
-    }, tx);
-
-    return expense;
+      workSiteId: workSiteId || null,
+      items: data.items && data.items.length > 0 ? {
+        create: data.items.map(item => ({
+          description: item.description,
+          qty: parseFloat(item.qty) || 1,
+          rate: parseFloat(item.rate) || 0,
+          amount: parseFloat(item.amount) || 0
+        }))
+      } : undefined
+    },
+    include: { items: true }
   });
+
+  // 2. Record Ledger Transaction (Debit) — sequential, not inside a transaction block
+  await ledgerService.recordTransaction({
+    accountId,
+    date: date || new Date(),
+    referenceNo: reference || expense.id,
+    moduleType: 'EXPENSE',
+    description: `Expense: ${title} (${category})`,
+    debit: parseFloat(amount),
+    linkedId: expense.id
+  });
+
+  return expense;
 };
 
 /**
- * Update an expense. (Limited for accounting integrity)
+ * Update an expense (metadata only — amount/account changes require manual reversal).
  */
 const update = async (id, data) => {
   const existing = await prisma.expense.findUnique({ where: { id } });
   if (!existing) throw ApiError.notFound('Expense not found');
 
-  // If amount or account changes, we should ideally revert and re-record.
-  // For now, let's only allow editing metadata fields.
   const { title, category, payee, reference, notes, receiptUrl, workSiteId } = data;
-  
+
   return await prisma.expense.update({
     where: { id },
     data: { title, category, payee, reference, notes, receiptUrl, workSiteId: workSiteId || null }
@@ -133,28 +129,26 @@ const update = async (id, data) => {
 };
 
 /**
- * Delete an expense and revert ledger.
+ * Delete an expense and revert ledger using sequential direct queries.
  */
 const remove = async (id) => {
   const expense = await prisma.expense.findUnique({ where: { id } });
   if (!expense) throw ApiError.notFound('Expense not found');
 
-  return await prisma.$transaction(async (tx) => {
-    // 1. Revert Ledger (Credit the amount back)
-    await ledgerService.recordTransaction({
-      accountId: expense.accountId,
-      date: new Date(),
-      referenceNo: `REV-${expense.reference || expense.id}`,
-      moduleType: 'ADJUSTMENT',
-      description: `Reverted Expense: ${expense.title}`,
-      credit: expense.amount,
-      linkedId: expense.id
-    }, tx);
-
-    // 2. Delete record
-    await tx.expense.delete({ where: { id } });
-    return true;
+  // 1. Revert Ledger (Credit the amount back)
+  await ledgerService.recordTransaction({
+    accountId: expense.accountId,
+    date: new Date(),
+    referenceNo: `REV-${expense.reference || expense.id}`,
+    moduleType: 'ADJUSTMENT',
+    description: `Reverted Expense: ${expense.title}`,
+    credit: expense.amount,
+    linkedId: expense.id
   });
+
+  // 2. Delete expense record (cascade handles items)
+  await prisma.expense.delete({ where: { id } });
+  return true;
 };
 
 module.exports = { getAll, getById, create, update, remove };

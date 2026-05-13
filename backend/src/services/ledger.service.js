@@ -10,9 +10,8 @@ const { buildPagination } = require('../utils/helpers');
 /**
  * Record a professional ledger transaction and update the account balance.
  * @param {object} params - { accountId, date, referenceNo, moduleType, description, credit, debit, linkedId, createdBy }
- * @param {object} tx - Optional Prisma transaction client
  */
-const recordTransaction = async (params, tx) => {
+const recordTransaction = async (params) => {
   const { 
     accountId, 
     date, 
@@ -28,47 +27,43 @@ const recordTransaction = async (params, tx) => {
   if (!accountId) throw ApiError.badRequest('Account ID is required');
   if (credit < 0 || debit < 0) throw ApiError.badRequest('Credit/Debit must be positive numbers');
 
-  const execute = async (client) => {
-    // 1. Fetch account and verify
-    const account = await client.account.findUnique({ where: { id: accountId } });
-    if (!account) throw ApiError.notFound('Account not found');
-    if (!account.isActive) throw ApiError.badRequest('Cannot transact on an inactive account');
+  // 1. Fetch account and verify
+  const account = await prisma.account.findUnique({ where: { id: accountId } });
+  if (!account) throw ApiError.notFound('Account not found');
+  if (!account.isActive) throw ApiError.badRequest('Cannot transact on an inactive account');
 
-    // 2. Insufficient Balance Check (only for debits)
-    if (debit > 0 && account.currentBalance < debit) {
-      throw ApiError.badRequest(`Insufficient balance in ${account.accountName}. Current: ₹${account.currentBalance}, Required: ₹${debit}`);
+  // 2. Insufficient Balance Check (only for debits)
+  if (debit > 0 && account.currentBalance < debit) {
+    throw ApiError.badRequest(`Insufficient balance in ${account.accountName}. Current: ₹${account.currentBalance}, Required: ₹${debit}`);
+  }
+
+  // 3. Calculate balance change
+  const balanceChange = credit - debit;
+
+  // 4. Update Account Balance Atomically
+  // We use increment to ensure row-level atomicity even without a transaction block
+  const updatedAccount = await prisma.account.update({
+    where: { id: accountId },
+    data: { currentBalance: { increment: balanceChange } }
+  });
+
+  const newBalance = updatedAccount.currentBalance;
+
+  // 5. Create Ledger Transaction Record
+  return await prisma.ledgerTransaction.create({
+    data: {
+      accountId,
+      date: date ? new Date(date) : new Date(),
+      referenceNo: referenceNo || null,
+      moduleType,
+      description: description || null,
+      credit,
+      debit,
+      balanceAfter: newBalance,
+      linkedId: linkedId || null,
+      createdBy: createdBy || null
     }
-
-    // 3. Calculate balance change
-    const balanceChange = credit - debit;
-
-    // 4. Update Account Balance Atomically
-    const updatedAccount = await client.account.update({
-      where: { id: accountId },
-      data: { currentBalance: { increment: balanceChange } }
-    });
-
-    const newBalance = updatedAccount.currentBalance;
-
-    // 5. Create Ledger Transaction Record
-    return await client.ledgerTransaction.create({
-      data: {
-        accountId,
-        date: date ? new Date(date) : new Date(),
-        referenceNo: referenceNo || null,
-        moduleType,
-        description: description || null,
-        credit,
-        debit,
-        balanceAfter: newBalance,
-        linkedId: linkedId || null,
-        createdBy: createdBy || null
-      }
-    });
-  };
-
-  if (tx) return await execute(tx);
-  return await prisma.$transaction(async (t) => await execute(t));
+  });
 };
 
 /**
@@ -76,7 +71,7 @@ const recordTransaction = async (params, tx) => {
  */
 const getAccountStatement = async (accountId, query = {}) => {
   const page = parseInt(query.page) || 1;
-  const limit = parseInt(query.limit) || 50; // Statements usually show more rows
+  const limit = parseInt(query.limit) || 50; 
   const skip = (page - 1) * limit;
 
   const where = { accountId };
@@ -97,19 +92,20 @@ const getAccountStatement = async (accountId, query = {}) => {
     ];
   }
 
-  const [items, total, summary] = await Promise.all([
-    prisma.ledgerTransaction.findMany({
-      where,
-      orderBy: { date: 'desc' },
-      skip,
-      take: limit
-    }),
-    prisma.ledgerTransaction.count({ where }),
-    prisma.ledgerTransaction.aggregate({
-      where,
-      _sum: { credit: true, debit: true }
-    })
-  ]);
+  // Use sequential queries instead of Promise.all to ensure stability on serverless
+  const items = await prisma.ledgerTransaction.findMany({
+    where,
+    orderBy: { date: 'desc' },
+    skip,
+    take: limit
+  });
+
+  const total = await prisma.ledgerTransaction.count({ where });
+
+  const summary = await prisma.ledgerTransaction.aggregate({
+    where,
+    _sum: { credit: true, debit: true }
+  });
 
   return {
     items,
@@ -125,6 +121,5 @@ const getAccountStatement = async (accountId, query = {}) => {
 module.exports = {
   recordTransaction,
   getAccountStatement,
-  // Legacy support aliases if needed (for safe migration)
   recordEntry: recordTransaction 
 };
