@@ -95,12 +95,14 @@ const search = async (query = '') => {
       OR: [
         { productName: { contains: query, mode: 'insensitive' } },
         { sku: { contains: query, mode: 'insensitive' } },
+        { hsnCode: { contains: query, mode: 'insensitive' } },
       ],
     },
     select: {
       id: true,
       productName: true,
       sku: true,
+      hsnCode: true,
       category: true,
       salePrice: true,
       purchasePrice: true,

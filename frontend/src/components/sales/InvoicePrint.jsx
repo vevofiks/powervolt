@@ -6,6 +6,49 @@ import logo from '../../assets/logo.png';
 import stamp from '../../assets/official_stamp.jpg';
 import './InvoicePrint.css';
 
+/**
+ * Convert a number to Indian currency words
+ */
+function numberToWords(num) {
+  if (num === 0) return 'Zero';
+  const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
+    'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+  const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+
+  function convertChunk(n) {
+    if (n === 0) return '';
+    if (n < 20) return ones[n];
+    if (n < 100) return tens[Math.floor(n / 10)] + (n % 10 ? ' ' + ones[n % 10] : '');
+    return ones[Math.floor(n / 100)] + ' Hundred' + (n % 100 ? ' and ' + convertChunk(n % 100) : '');
+  }
+
+  const intPart = Math.floor(Math.abs(num));
+  const decPart = Math.round((Math.abs(num) - intPart) * 100);
+
+  let result = '';
+  if (intPart >= 10000000) {
+    result += convertChunk(Math.floor(intPart / 10000000)) + ' Crore ';
+  }
+  const rem1 = intPart % 10000000;
+  if (rem1 >= 100000) {
+    result += convertChunk(Math.floor(rem1 / 100000)) + ' Lakh ';
+  }
+  const rem2 = rem1 % 100000;
+  if (rem2 >= 1000) {
+    result += convertChunk(Math.floor(rem2 / 1000)) + ' Thousand ';
+  }
+  const rem3 = rem2 % 1000;
+  if (rem3 > 0) {
+    result += convertChunk(rem3);
+  }
+
+  result = result.trim() || 'Zero';
+  if (decPart > 0) {
+    result += ' and ' + convertChunk(decPart) + ' Paise';
+  }
+  return result + ' Only';
+}
+
 export default function InvoicePrint({ invoice }) {
   const [settings, setSettings] = useState(null);
 
@@ -16,156 +59,193 @@ export default function InvoicePrint({ invoice }) {
   if (!invoice) return null;
   const items = invoice.items || [];
 
-  // Calculate taxes if GST
   const isGst = invoice.invoiceType === 'GST';
   const taxAmount = invoice.taxAmount || 0;
   const cgst = isGst ? (taxAmount / 2) : 0;
   const sgst = isGst ? (taxAmount / 2) : 0;
+  const totalQty = items.reduce((sum, item) => sum + (item.qty || 0), 0);
 
+  // Pad rows to fill at least 8 rows for a professional look
+  const minRows = 8;
+  const emptyRows = Math.max(0, minRows - items.length);
 
   return (
     <div className="invoice-print-container">
       <div className="invoice-outer-border">
-        {/* Header Section */}
+        {/* ═══ Header ═══ */}
         <div className="invoice-header">
           <div className="header-left">
             <img src={logo} alt="Power Volt Logo" className="logo" />
-            <h1 className="company-name">{settings?.companyName || 'Power Volt'}</h1>
+            <h1 className="company-name">{settings?.companyName || 'POWER VOLT'}</h1>
+            <div className="company-tagline">Electrical Solutions & Services</div>
             <div className="company-info">
               <p>{settings?.companyAddress || '595-B, Amajoor (PO), Krakkunnu, Manjeri, Malappuram (Dist), 676122'}</p>
-              <p>GSTIN : {settings?.companyGstin || '32AANAPL6617R1ZO'}</p>
-              <p>PAN : {settings?.companyPan || 'ANAPL6617R'}</p>
-              <p>Contact No : {settings?.companyPhone || '9567965664'}</p>
+              <p>GSTIN: {settings?.companyGstin || '32AANAPL6617R1ZO'} &nbsp;|&nbsp; PAN: {settings?.companyPan || 'ANAPL6617R'}</p>
+              <p>Contact: {settings?.companyPhone || '9567965664'}</p>
             </div>
           </div>
           <div className="header-right">
-            <h2 className="invoice-type-title">TAX INVOICE</h2>
+            <h2 className="invoice-type-title">{isGst ? 'TAX INVOICE' : 'INVOICE'}</h2>
             <table className="invoice-meta-table">
               <tbody>
                 <tr>
-                  <td className="label">DATE</td>
-                  <td className="value">{formatDate(invoice.date)}</td>
+                  <td className="meta-label">Invoice #</td>
+                  <td className="meta-value">{invoice.invoiceNo}</td>
                 </tr>
                 <tr>
-                  <td className="label">INVOICE #</td>
-                  <td className="value">{invoice.invoiceNo}</td>
+                  <td className="meta-label">Date</td>
+                  <td className="meta-value">{formatDate(invoice.date)}</td>
+                </tr>
+                <tr>
+                  <td className="meta-label">Type</td>
+                  <td className="meta-value">{isGst ? 'GST' : 'NON-GST'}</td>
                 </tr>
               </tbody>
             </table>
           </div>
         </div>
 
-        {/* Customer Section */}
+        <div className="header-divider" />
+
+        {/* ═══ Bill To ═══ */}
         <div className="bill-to-section">
           <div className="bill-to-header">BILL TO</div>
           <div className="bill-to-details">
-            <strong>{invoice.customerName}</strong>
+            <strong className="bill-to-name">{invoice.customerName}</strong>
             {invoice.customerAddress1 && <p>{invoice.customerAddress1}</p>}
             {invoice.customerAddress2 && <p>{invoice.customerAddress2}</p>}
-            <p>{invoice.customerCity}{invoice.customerCity && invoice.customerState ? ', ' : ''}{invoice.customerState} {invoice.customerPincode}</p>
-            {invoice.customerPhone && <p>PHON : {invoice.customerPhone}</p>}
-            {invoice.customerGstin && <p>GSTIN : {invoice.customerGstin}</p>}
-            <p>STATE NAME : {invoice.customerState || 'KERALA'} CODE 32</p>
+            <p>
+              {invoice.customerCity}{invoice.customerCity && invoice.customerState ? ', ' : ''}
+              {invoice.customerState} {invoice.customerPincode}
+            </p>
+            {invoice.customerPhone && <p>Phone: {invoice.customerPhone}</p>}
+            {invoice.customerGstin && <p>GSTIN: {invoice.customerGstin}</p>}
+            <p>State: {invoice.customerState || 'KERALA'}, Code: 32</p>
           </div>
         </div>
 
-        {/* Product Table */}
+        {/* ═══ Items Table ═══ */}
         <div className="items-table-wrapper">
           <table className="invoice-items-table">
             <thead>
               <tr>
-                <th width="30%">PRODUCT / SERVICE</th>
-                <th width="12%">HSN</th>
-                <th width="33%">DESCRIPTION</th>
-                <th width="5%">QTY</th>
-                <th width="10%">Price</th>
-                <th width="10%">AMOUNT</th>
+                <th className="col-sl">Sl</th>
+                <th className="col-product">Product / Service</th>
+                <th className="col-hsn">HSN/SAC</th>
+                <th className="col-qty">Qty</th>
+                <th className="col-rate">Rate</th>
+                <th className="col-amount">Amount</th>
               </tr>
             </thead>
             <tbody>
               {items.map((item, index) => (
                 <tr key={index}>
-                  <td className="font-semibold">{item.productName}</td>
+                  <td className="col-center">{index + 1}</td>
+                  <td className="col-product-name">
+                    <span className="product-name-text">{item.productName}</span>
+                  </td>
                   <td className="col-center">{item.hsnCode || '—'}</td>
-                  <td>{item.description || item.productName}</td>
                   <td className="col-center">{item.qty}</td>
-                  <td className="col-right">₹ {item.rate.toFixed(2)}</td>
-                  <td className="col-right">₹ {item.amount.toFixed(2)}</td>
+                  <td className="col-right">₹{Number(item.rate).toFixed(2)}</td>
+                  <td className="col-right">₹{Number(item.amount).toFixed(2)}</td>
                 </tr>
               ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Summary Section */}
-        <div className="summary-container" style={{ marginTop: '20px' }}>
-          <table className="totals-table">
-            <tbody>
-              <tr>
-                <td className="label">Subtotal</td>
-                <td className="value">₹ {invoice.subtotal.toFixed(2)}</td>
-              </tr>
-              {invoice.discount > 0 && (
-                <tr>
-                  <td className="label">Discount</td>
-                  <td className="value">- ₹ {invoice.discount.toFixed(2)}</td>
+              {/* Empty padding rows */}
+              {Array.from({ length: emptyRows }).map((_, i) => (
+                <tr key={`empty-${i}`} className="empty-row">
+                  <td>&nbsp;</td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
+                  <td></td>
                 </tr>
-              )}
-              {isGst && (
-                <>
-                  <tr>
-                    <td className="label">CGST @ 9%</td>
-                    <td className="value">₹ {cgst.toFixed(2)}</td>
-                  </tr>
-                  <tr>
-                    <td className="label">SGST @ 9%</td>
-                    <td className="value">₹ {sgst.toFixed(2)}</td>
-                  </tr>
-                  <tr>
-                    <td className="label">CESS</td>
-                    <td className="value">₹ 0.00</td>
-                  </tr>
-                </>
-              )}
-              <tr className="grand-total-row">
-                <td className="label">TOTAL</td>
-                <td className="value">₹ {invoice.totalAmount.toFixed(2)}</td>
+              ))}
+              {/* Totals row inside table */}
+              <tr className="items-total-row">
+                <td></td>
+                <td className="items-total-label">Total</td>
+                <td></td>
+                <td className="col-center total-qty">{totalQty}</td>
+                <td></td>
+                <td className="col-right total-amount">₹{invoice.subtotal.toFixed(2)}</td>
               </tr>
             </tbody>
           </table>
         </div>
 
-        {/* Bottom Section */}
-        <div className="invoice-bottom">
+        {/* ═══ Summary + Amount in Words ═══ */}
+        <div className="invoice-summary-section">
+          <div className="amount-words-box">
+            <span className="words-label">Amount in Words:</span>
+            <span className="words-value">{numberToWords(invoice.totalAmount)}</span>
+          </div>
+          <div className="totals-box">
+            <table className="totals-table">
+              <tbody>
+                <tr>
+                  <td className="label">Subtotal</td>
+                  <td className="value">₹{invoice.subtotal.toFixed(2)}</td>
+                </tr>
+                {invoice.discount > 0 && (
+                  <tr>
+                    <td className="label">Discount</td>
+                    <td className="value">- ₹{invoice.discount.toFixed(2)}</td>
+                  </tr>
+                )}
+                {isGst && (
+                  <>
+                    <tr>
+                      <td className="label">CGST @ 9%</td>
+                      <td className="value">₹{cgst.toFixed(2)}</td>
+                    </tr>
+                    <tr>
+                      <td className="label">SGST @ 9%</td>
+                      <td className="value">₹{sgst.toFixed(2)}</td>
+                    </tr>
+                  </>
+                )}
+                <tr className="grand-total-row">
+                  <td className="label">TOTAL</td>
+                  <td className="value">₹{invoice.totalAmount.toFixed(2)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* ═══ Bottom: Bank Details + Stamp + Signature ═══ */}
+        <div className="invoice-bottom-section">
           <div className="bank-details">
             <h4>Bank Details</h4>
-            <p>Bank : {invoice.account?.bankName || 'Federal Bank - Manjeri'}</p>
-            <p>Name : {invoice.account?.accountName || 'POWER VOLT'}</p>
-            <p>Acc No : {invoice.account?.accountNumber || '13650200030606'}</p>
-            <p>IFSC : {invoice.account?.ifscCode || 'FDRL0001365'}</p>
-            <p>PAN : {settings?.companyPan || 'ANAPL6617R'}</p>
+            <p>Bank: {invoice.account?.bankName || 'Federal Bank - Manjeri'}</p>
+            <p>Name: {invoice.account?.accountName || 'POWER VOLT'}</p>
+            <p>A/C No: {invoice.account?.accountNumber || '13650200030606'}</p>
+            <p>IFSC: {invoice.account?.ifscCode || 'FDRL0001365'}</p>
+            <p>PAN: {settings?.companyPan || 'ANAPL6617R'}</p>
           </div>
-          
-          <div className="seal-area" style={{ position: 'relative' }}>
-            <img src={stamp} alt="Official Stamp" className="seal-img" style={{ 
-              borderRadius: '50%', 
-              width: '120px',
-              height: '120px',
-              opacity: '0.85',
-              transform: 'rotate(-3deg)' 
-            }} />
-            <div style={{ textAlign: 'center', marginTop: '10px' }}>
-              <p style={{ fontSize: '10px', color: '#666', margin: 0 }}>Authorized By</p>
-              <p style={{ fontSize: '12px', fontWeight: 700, margin: 0 }}>Lukmanul Hakeem M</p>
+
+          <div className="seal-area">
+            <img src={stamp} alt="Official Stamp" className="seal-img" />
+            <div className="seal-info">
+              <p className="seal-label">Authorized By</p>
+              <p className="seal-name">Lukmanul Hakeem M</p>
             </div>
           </div>
 
           <div className="signature-area">
+            <div className="signature-line"></div>
             <p>Authorized Signatory</p>
           </div>
         </div>
 
-        {/* Footer Note */}
+        {/* ═══ Terms & Footer ═══ */}
+        {invoice.notes && (
+          <div className="invoice-notes">
+            <strong>Notes:</strong> {invoice.notes}
+          </div>
+        )}
+
         <div className="invoice-footer-note">
           Thank You For Your Business!
         </div>

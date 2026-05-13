@@ -8,11 +8,12 @@ import Select from '../components/ui/Select';
 import Button from '../components/ui/Button';
 import Modal from '../components/ui/Modal';
 import CustomerForm from '../components/customers/CustomerForm';
+import ProductForm from '../components/products/ProductForm';
 import { productApi } from '../api/products';
 import { accountApi } from '../api/accounts';
 import { customerApi } from '../api/customers';
 import { salesInvoiceApi } from '../api/salesInvoices';
-import { HiOutlinePlus, HiOutlineTrash, HiOutlineSave, HiOutlineArrowLeft, HiOutlineSearch, HiOutlineUserAdd } from 'react-icons/hi';
+import { HiOutlinePlus, HiOutlineTrash, HiOutlineSave, HiOutlineArrowLeft, HiOutlineUserAdd, HiOutlineCube } from 'react-icons/hi';
 import './CreateSalesInvoice.css';
 
 export default function CreateSalesInvoice() {
@@ -20,7 +21,10 @@ export default function CreateSalesInvoice() {
   const [loading, setLoading] = useState(false);
   const [accounts, setAccounts] = useState([]);
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
-  
+  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
+  const [productModalIndex, setProductModalIndex] = useState(null);
+  const [productSubmitting, setProductSubmitting] = useState(false);
+
   const [invoice, setInvoice] = useState({
     invoiceType: 'NON_GST',
     customerId: '',
@@ -32,14 +36,14 @@ export default function CreateSalesInvoice() {
     customerCity: '',
     customerState: '',
     customerPincode: '',
-    items: [{ productId: '', productName: '', qty: 1, rate: 0, amount: 0, gstPercent: 0 }],
+    items: [{ productId: '', productName: '', hsnCode: '', qty: 1, rate: 0, amount: 0 }],
     discount: 0,
     accountId: '',
     notes: '',
     date: new Date().toISOString().split('T')[0]
   });
 
-  const [productSearch, setProductSearch] = useState({}); // { index: [results] }
+  const [productSearch, setProductSearch] = useState({});
   const [customerResults, setCustomerResults] = useState([]);
   const [showCustomerResults, setShowCustomerResults] = useState(false);
 
@@ -93,10 +97,9 @@ export default function CreateSalesInvoice() {
   };
 
   const handleAddNewCustomer = (custData) => {
-    // This is called from the modal, but we just want to fill the form
     setInvoice(prev => ({
       ...prev,
-      customerId: '', // Treat as new if explicitly adding from modal
+      customerId: '',
       customerName: custData.name,
       customerPhone: custData.phone,
       customerGstin: custData.gstin,
@@ -112,10 +115,9 @@ export default function CreateSalesInvoice() {
 
   // ─── Product Selection ────────────────────────────────────────
   const handleProductSearch = async (index, query) => {
-    // If user types, we should clear the productId until they select a result
     const newItems = [...invoice.items];
     newItems[index].productName = query;
-    newItems[index].productId = ''; 
+    newItems[index].productId = '';
     setInvoice(prev => ({ ...prev, items: newItems }));
 
     if (query.length < 1) {
@@ -136,18 +138,54 @@ export default function CreateSalesInvoice() {
       ...newItems[index],
       productId: product.id,
       productName: product.productName,
+      hsnCode: product.hsnCode || '',
       rate: product.salePrice,
-      gstPercent: product.gstPercent,
       amount: product.salePrice * newItems[index].qty
     };
     setInvoice(prev => ({ ...prev, items: newItems }));
     setProductSearch(prev => ({ ...prev, [index]: [] }));
   };
 
+  // ─── Quick Add Product (from modal) ───────────────────────────
+  const openProductModal = (index) => {
+    setProductModalIndex(index);
+    setIsProductModalOpen(true);
+  };
+
+  const handleQuickAddProduct = async (productData) => {
+    setProductSubmitting(true);
+    try {
+      const res = await productApi.create(productData);
+      const newProduct = res.data;
+
+      // Auto-select the newly created product in the relevant row
+      if (productModalIndex !== null) {
+        const newItems = [...invoice.items];
+        newItems[productModalIndex] = {
+          ...newItems[productModalIndex],
+          productId: newProduct.id,
+          productName: newProduct.productName,
+          hsnCode: newProduct.hsnCode || '',
+          rate: newProduct.salePrice,
+          amount: newProduct.salePrice * newItems[productModalIndex].qty
+        };
+        setInvoice(prev => ({ ...prev, items: newItems }));
+      }
+
+      setIsProductModalOpen(false);
+      setProductModalIndex(null);
+      toast.success(`Product "${newProduct.productName}" created & added to invoice`);
+    } catch (err) {
+      toast.error(err.message || 'Failed to create product');
+    } finally {
+      setProductSubmitting(false);
+    }
+  };
+
   const addItem = () => {
     setInvoice(prev => ({
       ...prev,
-      items: [...prev.items, { productId: '', productName: '', qty: 1, rate: 0, amount: 0, gstPercent: 0 }]
+      items: [...prev.items, { productId: '', productName: '', hsnCode: '', qty: 1, rate: 0, amount: 0 }]
     }));
   };
 
@@ -168,9 +206,8 @@ export default function CreateSalesInvoice() {
 
   // Calculations
   const subtotal = invoice.items.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
-  const taxAmount = invoice.invoiceType === 'GST' 
-    ? invoice.items.reduce((sum, item) => sum + ((parseFloat(item.amount) || 0) * (parseFloat(item.gstPercent) || 0) / 100), 0)
-    : 0;
+  // Fixed GST: 9% CGST + 9% SGST = 18% total
+  const taxAmount = invoice.invoiceType === 'GST' ? subtotal * 0.18 : 0;
   const totalAmount = subtotal + taxAmount - (parseFloat(invoice.discount) || 0);
 
   const handleSubmit = async (e) => {
@@ -193,8 +230,8 @@ export default function CreateSalesInvoice() {
 
   return (
     <div className="page-wrapper create-invoice">
-      <PageHeader 
-        title="Create Sales Invoice" 
+      <PageHeader
+        title="Create Sales Invoice"
         subtitle="Generate a new GST or Non-GST invoice"
         actionLabel="Back to History"
         actionIcon={HiOutlineArrowLeft}
@@ -209,10 +246,10 @@ export default function CreateSalesInvoice() {
               <div className="customer-selection-field" style={{ position: 'relative', gridColumn: 'span 2' }}>
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
                   <div style={{ flex: 1 }}>
-                    <Input 
-                      label="Customer Name *" 
+                    <Input
+                      label="Customer Name *"
                       placeholder="Type to search or enter new name"
-                      value={invoice.customerName} 
+                      value={invoice.customerName}
                       onChange={(e) => handleCustomerSearch(e.target.value)}
                       autoComplete="off"
                     />
@@ -233,56 +270,57 @@ export default function CreateSalesInvoice() {
                 )}
               </div>
 
-              <Input 
-                label="Phone Number" 
+              <Input
+                label="Phone Number"
                 placeholder="10-digit number"
-                value={invoice.customerPhone} 
+                value={invoice.customerPhone}
                 onChange={(e) => setInvoice(prev => ({ ...prev, customerPhone: e.target.value, customerId: '' }))}
               />
-              <Input 
-                label="GSTIN" 
+              <Input
+                label="GSTIN"
                 placeholder="Optional"
-                value={invoice.customerGstin} 
+                value={invoice.customerGstin}
                 onChange={(e) => setInvoice(prev => ({ ...prev, customerGstin: e.target.value }))}
               />
-              
+
               <div style={{ gridColumn: 'span 2' }}>
-                <Input 
-                  label="Address Line 1" 
+                <Input
+                  label="Address Line 1"
                   placeholder="Street / Area"
-                  value={invoice.customerAddress1} 
+                  value={invoice.customerAddress1}
                   onChange={(e) => setInvoice(prev => ({ ...prev, customerAddress1: e.target.value }))}
                 />
               </div>
 
-              <Input 
-                label="City" 
+              <Input
+                label="City"
                 placeholder="Mumbai"
-                value={invoice.customerCity} 
+                value={invoice.customerCity}
                 onChange={(e) => setInvoice(prev => ({ ...prev, customerCity: e.target.value }))}
               />
-              <Input 
-                label="Pincode" 
+              <Input
+                label="Pincode"
                 placeholder="6-digit"
-                value={invoice.customerPincode} 
+                value={invoice.customerPincode}
                 onChange={(e) => setInvoice(prev => ({ ...prev, customerPincode: e.target.value }))}
               />
             </div>
 
             <div style={{ marginTop: '24px', display: 'flex', gap: '16px' }}>
-              <Select 
-                label="Invoice Type" 
-                value={invoice.invoiceType} 
+              <Select
+                label="Invoice Type"
+                value={invoice.invoiceType}
                 onChange={(e) => setInvoice(prev => ({ ...prev, invoiceType: e.target.value }))}
                 options={[
                   { value: 'GST', label: 'GST Invoice' },
                   { value: 'NON_GST', label: 'Non-GST Invoice' }
                 ]}
               />
-              <Input 
-                label="Invoice Date" 
-                type="date" 
-                value={invoice.date} 
+              <Input
+                label="Invoice Date"
+                type="date"
+                value={invoice.date}
+                max={new Date().toISOString().split('T')[0]}
                 onChange={(e) => setInvoice(prev => ({ ...prev, date: e.target.value }))}
               />
             </div>
@@ -294,10 +332,11 @@ export default function CreateSalesInvoice() {
               <thead>
                 <tr>
                   <th>Product</th>
-                  <th width="100">Qty</th>
-                  <th width="150">Rate (₹)</th>
-                  <th width="150">Amount (₹)</th>
-                  <th width="50"></th>
+                  <th width="100">HSN</th>
+                  <th width="80">Qty</th>
+                  <th width="130">Rate (₹)</th>
+                  <th width="130">Amount (₹)</th>
+                  <th width="80"></th>
                 </tr>
               </thead>
               <tbody>
@@ -305,24 +344,38 @@ export default function CreateSalesInvoice() {
                   <tr key={index}>
                     <td className="product-cell">
                       <div className="product-search-container">
-                        <input 
-                          type="text" 
-                          placeholder="Search product..." 
-                          className={`item-input ${!item.productId && item.productName ? 'input-error' : ''}`}
-                          value={item.productName}
-                          onChange={(e) => handleProductSearch(index, e.target.value)}
-                          autoComplete="off"
-                        />
+                        <div className="product-input-row">
+                          <input
+                            type="text"
+                            placeholder="Search product..."
+                            className={`item-input ${!item.productId && item.productName ? 'input-error' : ''}`}
+                            value={item.productName}
+                            onChange={(e) => handleProductSearch(index, e.target.value)}
+                            autoComplete="off"
+                          />
+                          <button
+                            type="button"
+                            className="quick-add-btn"
+                            onClick={() => openProductModal(index)}
+                            title="Quick add new product"
+                          >
+                            <HiOutlineCube />
+                            <span>New</span>
+                          </button>
+                        </div>
                         {!item.productId && item.productName && (
-                          <div className="input-hint text-danger">Select from results</div>
+                          <div className="input-hint text-danger">Select from results or add new</div>
                         )}
                         {productSearch[index]?.length > 0 && (
                           <div className="search-results">
                             {productSearch[index].map(p => (
                               <div key={p.id} className="search-item" onClick={() => selectProduct(index, p)}>
                                 <span className="p-name">{p.productName}</span>
-                                <span className="p-price">₹{p.salePrice}</span>
-                                <span className="p-stock">Stock: {p.stockQty}</span>
+                                <div className="p-details">
+                                  <span className="p-price">₹{p.salePrice}</span>
+                                  <span className="p-hsn">HSN: {p.hsnCode || '—'}</span>
+                                  <span className="p-stock">Stock: {p.stockQty}</span>
+                                </div>
                               </div>
                             ))}
                           </div>
@@ -330,18 +383,27 @@ export default function CreateSalesInvoice() {
                       </div>
                     </td>
                     <td>
-                      <input 
-                        type="number" 
-                        className="item-input" 
-                        value={item.qty} 
+                      <input
+                        type="text"
+                        className="item-input hsn-input"
+                        value={item.hsnCode || ''}
+                        placeholder="—"
+                        readOnly
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        className="item-input"
+                        value={item.qty}
                         onChange={(e) => updateItem(index, 'qty', parseFloat(e.target.value) || 0)}
                       />
                     </td>
                     <td>
-                      <input 
-                        type="number" 
-                        className="item-input" 
-                        value={item.rate} 
+                      <input
+                        type="number"
+                        className="item-input"
+                        value={item.rate}
                         onChange={(e) => updateItem(index, 'rate', parseFloat(e.target.value) || 0)}
                       />
                     </td>
@@ -364,9 +426,9 @@ export default function CreateSalesInvoice() {
           <div className="invoice-bottom">
             <Card className="invoice-card summary-card" title="Payment & Summary">
               <div className="summary-grid">
-                <Select 
-                  label="Receiving Account *" 
-                  value={invoice.accountId} 
+                <Select
+                  label="Receiving Account *"
+                  value={invoice.accountId}
                   onChange={(e) => setInvoice(prev => ({ ...prev, accountId: e.target.value }))}
                   options={accounts.map(acc => ({ value: acc.id, label: `${acc.accountName} (₹${acc.currentBalance})` }))}
                 />
@@ -376,17 +438,23 @@ export default function CreateSalesInvoice() {
                     <span>₹{subtotal.toFixed(2)}</span>
                   </div>
                   {invoice.invoiceType === 'GST' && (
-                    <div className="summary-row">
-                      <span>GST (CGST + SGST):</span>
-                      <span>₹{taxAmount.toFixed(2)}</span>
-                    </div>
+                    <>
+                      <div className="summary-row">
+                        <span>CGST @ 9%:</span>
+                        <span>₹{(taxAmount / 2).toFixed(2)}</span>
+                      </div>
+                      <div className="summary-row">
+                        <span>SGST @ 9%:</span>
+                        <span>₹{(taxAmount / 2).toFixed(2)}</span>
+                      </div>
+                    </>
                   )}
                   <div className="summary-row">
                     <span>Discount:</span>
-                    <input 
-                      type="number" 
-                      className="discount-input" 
-                      value={invoice.discount} 
+                    <input
+                      type="number"
+                      className="discount-input"
+                      value={invoice.discount}
                       onChange={(e) => setInvoice(prev => ({ ...prev, discount: parseFloat(e.target.value) || 0 }))}
                     />
                   </div>
@@ -397,10 +465,10 @@ export default function CreateSalesInvoice() {
                 </div>
               </div>
               <div className="notes-section">
-                <Input 
-                  label="Notes" 
-                  placeholder="Additional information..." 
-                  value={invoice.notes} 
+                <Input
+                  label="Notes"
+                  placeholder="Additional information..."
+                  value={invoice.notes}
                   onChange={(e) => setInvoice(prev => ({ ...prev, notes: e.target.value }))}
                 />
               </div>
@@ -416,9 +484,18 @@ export default function CreateSalesInvoice() {
 
       {/* New Customer Modal */}
       <Modal isOpen={isCustomerModalOpen} onClose={() => setIsCustomerModalOpen(false)} title="Quick Add Customer Profile" size="lg">
-        <CustomerForm 
-          onSubmit={handleAddNewCustomer} 
-          onCancel={() => setIsCustomerModalOpen(false)} 
+        <CustomerForm
+          onSubmit={handleAddNewCustomer}
+          onCancel={() => setIsCustomerModalOpen(false)}
+        />
+      </Modal>
+
+      {/* Quick Add Product Modal */}
+      <Modal isOpen={isProductModalOpen} onClose={() => { setIsProductModalOpen(false); setProductModalIndex(null); }} title="Quick Add Product" size="xl">
+        <ProductForm
+          onSubmit={handleQuickAddProduct}
+          onCancel={() => { setIsProductModalOpen(false); setProductModalIndex(null); }}
+          loading={productSubmitting}
         />
       </Modal>
     </div>

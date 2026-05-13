@@ -120,7 +120,8 @@ const create = async (data) => {
     if (!product) throw ApiError.notFound(`Product not found: ${item.productId}`);
 
     const itemAmount = item.qty * item.rate;
-    const itemTax = invoiceType === 'GST' ? (itemAmount * (product.gstPercent / 100)) : 0;
+    // Fixed GST: 9% CGST + 9% SGST = 18% total
+    const itemTax = invoiceType === 'GST' ? (itemAmount * 0.18) : 0;
     const itemProfit = (item.rate - product.purchasePrice) * item.qty;
 
     subtotal += itemAmount;
@@ -134,7 +135,7 @@ const create = async (data) => {
       qty: item.qty,
       rate: item.rate,
       purchasePrice: product.purchasePrice,
-      gstPercent: product.gstPercent,
+      gstPercent: 18,
       amount: itemAmount
     });
 
