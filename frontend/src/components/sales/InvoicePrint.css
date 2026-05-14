@@ -15,7 +15,6 @@
 
 .invoice-print-container {
   width: 210mm;
-  min-height: 297mm;
   padding: 8mm;
   margin: 0 auto;
   background: white;
@@ -23,12 +22,13 @@
   color: var(--text-dark);
   position: relative;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Outer Border */
 .invoice-outer-border {
   border: 2.5px solid var(--invoice-green);
-  height: 100%;
   padding: 6mm 8mm;
   display: flex;
   flex-direction: column;
@@ -47,8 +47,8 @@
 }
 
 .header-left .logo {
-  width: 70px;
-  height: 70px;
+  width: 100px;
+  height: 80px;
   margin-bottom: 6px;
 }
 
@@ -163,7 +163,7 @@
 
 /* ═══ Items Table ═══ */
 .items-table-wrapper {
-  flex: 1;
+  margin-bottom: 20px;
 }
 
 .invoice-items-table {
@@ -318,7 +318,7 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  margin-top: 24px;
+  margin-top: 40px;
   padding-top: 14px;
   border-top: 1px dashed #cbd5e1;
 }
@@ -340,43 +340,56 @@
   margin: 1px 0;
 }
 
-.seal-area {
+.signature-area {
   text-align: center;
+  min-width: 160px;
+  position: relative;
+}
+
+.seal-area {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 .seal-img {
-  width: 110px;
-  height: 110px;
+  width: 90px;
+  height: 90px;
   border-radius: 50%;
   opacity: 0.85;
   transform: rotate(-3deg);
+  margin-bottom: -40px; /* Overlaps the signature line gap without bleeding upward */
+  position: relative;
+  z-index: 1;
 }
 
-.seal-info {
-  margin-top: 6px;
+.authorized-by-col {
+  text-align: center;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding-bottom: 6px;
 }
 
-.seal-label {
-  font-size: 9px;
-  color: #94a3b8;
-  margin: 0;
+.auth-label {
+  font-size: 10px;
+  color: #475569;
+  margin: 0 0 2px 0;
   text-transform: uppercase;
 }
 
-.seal-name {
-  font-size: 11px;
+.auth-name {
+  font-size: 13px;
   font-weight: 700;
   margin: 0;
   color: var(--text-dark);
 }
 
-.signature-area {
-  text-align: center;
-  min-width: 160px;
-}
-
 .signature-line {
-  height: 50px;
+  height: 40px;
 }
 
 .signature-area p {
@@ -385,6 +398,8 @@
   border-top: 1px solid #334155;
   padding-top: 5px;
   font-weight: 600;
+  position: relative;
+  z-index: 2;
 }
 
 /* ═══ Notes ═══ */
@@ -413,42 +428,90 @@
 @media print {
   @page {
     size: A4;
-    margin: 0;
+    margin: 5mm;
   }
 
-  body {
-    background: white;
+  /* Reset all main layout wrappers so they don't stretch to a 2nd page */
+  html, body, #root, .app-container, .main-content, .page-wrapper, .modal-overlay {
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: none !important;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  /* Hide sibling elements to the modal so they take 0 space */
+  .sidebar, .app-sidebar, header, nav, .footer, .page-header, .filters-section, .card {
+    display: none !important;
+  }
+
+  /* But keep the print container visible */
+  .invoice-print-container,
+  .invoice-print-container * {
+    visibility: visible;
+  }
+
+  .modal-overlay,
+  .modal {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    width: 100% !important;
+  }
+
+  .modal__header,
+  .print-actions {
+    display: none !important;
   }
 
   .invoice-print-container {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
     width: 100%;
-    height: 100%;
-    padding: 8mm;
+    height: auto;
+    padding: 0;
+    margin: 0;
     box-shadow: none;
   }
 
   .invoice-outer-border {
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    border-color: #16a34a !important;
+  }
+
+  .invoice-type-title {
+    color: #16a34a !important;
   }
 
   .bill-to-header,
   .invoice-items-table th {
-    background-color: var(--invoice-green) !important;
+    background-color: #16a34a !important;
     color: white !important;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
   .grand-total-row {
     background-color: #f0fdf4 !important;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
   .items-total-row {
     background-color: #f8fafc !important;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .invoice-footer-note {
+    color: #16a34a !important;
   }
 }

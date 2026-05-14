@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { formatDate } from '../../utils/formatDate';
 import { formatCurrency } from '../../utils/formatCurrency';
 import { settingApi } from '../../api/settings';
-import logo from '../../assets/logo.png';
 import stamp from '../../assets/official_stamp.jpg';
 import './InvoicePrint.css';
 
@@ -65,19 +64,15 @@ export default function InvoicePrint({ invoice }) {
   const sgst = isGst ? (taxAmount / 2) : 0;
   const totalQty = items.reduce((sum, item) => sum + (item.qty || 0), 0);
 
-  // Pad rows to fill at least 8 rows for a professional look
-  const minRows = 8;
-  const emptyRows = Math.max(0, minRows - items.length);
-
   return (
     <div className="invoice-print-container">
       <div className="invoice-outer-border">
         {/* ═══ Header ═══ */}
         <div className="invoice-header">
           <div className="header-left">
-            <img src={logo} alt="Power Volt Logo" className="logo" />
+            <img src="/logo.svg" alt="Power Volt Logo" className="logo" />
             <h1 className="company-name">{settings?.companyName || 'POWER VOLT'}</h1>
-            <div className="company-tagline">Electrical Solutions & Services</div>
+            <div className="company-tagline">Electrical Engineering & Services</div>
             <div className="company-info">
               <p>{settings?.companyAddress || '595-B, Amajoor (PO), Krakkunnu, Manjeri, Malappuram (Dist), 676122'}</p>
               <p>GSTIN: {settings?.companyGstin || '32AANAPL6617R1ZO'} &nbsp;|&nbsp; PAN: {settings?.companyPan || 'ANAPL6617R'}</p>
@@ -150,17 +145,6 @@ export default function InvoicePrint({ invoice }) {
                   <td className="col-right">₹{Number(item.amount).toFixed(2)}</td>
                 </tr>
               ))}
-              {/* Empty padding rows */}
-              {Array.from({ length: emptyRows }).map((_, i) => (
-                <tr key={`empty-${i}`} className="empty-row">
-                  <td>&nbsp;</td>
-                  <td></td>
-                  <td></td>
-                  <td></td>
-                  <td></td>
-                  <td></td>
-                </tr>
-              ))}
               {/* Totals row inside table */}
               <tr className="items-total-row">
                 <td></td>
@@ -216,6 +200,7 @@ export default function InvoicePrint({ invoice }) {
 
         {/* ═══ Bottom: Bank Details + Stamp + Signature ═══ */}
         <div className="invoice-bottom-section">
+          {/* Column 1: Bank Details */}
           <div className="bank-details">
             <h4>Bank Details</h4>
             <p>Bank: {invoice.account?.bankName || 'Federal Bank - Manjeri'}</p>
@@ -225,15 +210,17 @@ export default function InvoicePrint({ invoice }) {
             <p>PAN: {settings?.companyPan || 'ANAPL6617R'}</p>
           </div>
 
-          <div className="seal-area">
-            <img src={stamp} alt="Official Stamp" className="seal-img" />
-            <div className="seal-info">
-              <p className="seal-label">Authorized By</p>
-              <p className="seal-name">Lukmanul Hakeem M</p>
-            </div>
+          {/* Column 2: Authorized By */}
+          <div className="authorized-by-col">
+            <p className="auth-label">Authorized By</p>
+            <p className="auth-name">Lukmanul Hakeem M</p>
           </div>
 
+          {/* Column 3: Stamp & Signature */}
           <div className="signature-area">
+            <div className="seal-area">
+              <img src={stamp} alt="Official Stamp" className="seal-img" />
+            </div>
             <div className="signature-line"></div>
             <p>Authorized Signatory</p>
           </div>

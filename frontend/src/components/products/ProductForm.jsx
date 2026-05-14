@@ -30,7 +30,6 @@ const initialState = {
   hsnCode: '',
   purchasePrice: '',
   salePrice: '',
-  gstPercent: '',
   stockQty: '',
   unit: 'Nos',
   lowStockThreshold: '5',
@@ -50,7 +49,6 @@ export default function ProductForm({ product, onSubmit, onCancel, loading }) {
         hsnCode: product.hsnCode || '',
         purchasePrice: product.purchasePrice?.toString() || '0',
         salePrice: product.salePrice?.toString() || '0',
-        gstPercent: product.gstPercent?.toString() || '0',
         stockQty: product.stockQty?.toString() || '0',
         unit: product.unit || 'Nos',
         lowStockThreshold: product.lowStockThreshold?.toString() || '5',
@@ -64,7 +62,6 @@ export default function ProductForm({ product, onSubmit, onCancel, loading }) {
     if (!form.category) e.category = 'Category is required';
     if (form.salePrice && parseFloat(form.salePrice) < 0) e.salePrice = 'Must be 0 or more';
     if (form.purchasePrice && parseFloat(form.purchasePrice) < 0) e.purchasePrice = 'Must be 0 or more';
-    if (form.gstPercent && (parseFloat(form.gstPercent) < 0 || parseFloat(form.gstPercent) > 100)) e.gstPercent = 'Must be 0-100';
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -82,7 +79,7 @@ export default function ProductForm({ product, onSubmit, onCancel, loading }) {
       ...form,
       purchasePrice: parseFloat(form.purchasePrice) || 0,
       salePrice: parseFloat(form.salePrice) || 0,
-      gstPercent: parseFloat(form.gstPercent) || 0,
+      gstPercent: 18,
       stockQty: parseFloat(form.stockQty) || 0,
       lowStockThreshold: parseFloat(form.lowStockThreshold) || 5,
     });
@@ -102,7 +99,6 @@ export default function ProductForm({ product, onSubmit, onCancel, loading }) {
       <div className="product-form__grid">
         <Input label="Purchase Price (₹)" name="purchasePrice" type="number" step="0.01" placeholder="0.00" value={form.purchasePrice} onChange={handleChange} error={errors.purchasePrice} id="input-purchase-price" />
         <Input label="Sale Price (₹)" name="salePrice" type="number" step="0.01" placeholder="0.00" value={form.salePrice} onChange={handleChange} error={errors.salePrice} id="input-sale-price" />
-        <Input label="GST %" name="gstPercent" type="number" step="0.01" placeholder="18" value={form.gstPercent} onChange={handleChange} error={errors.gstPercent} id="input-gst" />
         <Select label="Unit" name="unit" value={form.unit} onChange={handleChange} options={unitOptions} id="select-unit" />
         <Input label={isEdit ? 'Stock (read-only)' : 'Opening Stock'} name="stockQty" type="number" step="0.01" placeholder="0" value={form.stockQty} onChange={handleChange} disabled={isEdit} id="input-stock" />
         <Input label="Low Stock Alert" name="lowStockThreshold" type="number" step="1" placeholder="5" value={form.lowStockThreshold} onChange={handleChange} id="input-low-stock" />

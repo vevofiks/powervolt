@@ -121,7 +121,18 @@ export default function SalesInvoice() {
         {selectedInvoice && (
           <div className="print-modal-content">
             <div className="print-actions">
-              <Button onClick={() => window.print()} icon={HiOutlinePrinter}>Print Now</Button>
+              <Button 
+                onClick={() => {
+                  const originalTitle = document.title;
+                  const safeCustomerName = (selectedInvoice.customerName || 'Customer').replace(/[^a-zA-Z0-9]/g, '_');
+                  document.title = `${safeCustomerName}_${selectedInvoice.invoiceNo}`;
+                  window.print();
+                  document.title = originalTitle;
+                }} 
+                icon={HiOutlinePrinter}
+              >
+                Print Now
+              </Button>
             </div>
             <div className="print-preview-container">
               <InvoicePrint invoice={selectedInvoice} />
