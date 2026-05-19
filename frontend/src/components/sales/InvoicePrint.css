@@ -120,7 +120,7 @@
 
 .header-divider {
   height: 2px;
-  background: linear-gradient(to right, var(--invoice-green), transparent);
+  background: var(--invoice-green);
   margin-bottom: 14px;
 }
 
@@ -532,7 +532,8 @@
   }
 
   .bill-to-header,
-  .invoice-items-table th {
+  .invoice-items-table th,
+  .header-divider {
     background-color: #16a34a !important;
     color: white !important;
     -webkit-print-color-adjust: exact !important;
