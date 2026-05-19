@@ -12,5 +12,7 @@ router.use('/workers', require('./worker.routes'));
 router.use('/salaries', require('./salary.routes'));
 router.use('/reports', require('./report.routes'));
 router.use('/settings', require('./setting.routes'));
+router.use('/vendors', require('./vendor.routes'));
+router.use('/purchase-bills', require('./purchaseBill.routes'));
 
 module.exports = router;

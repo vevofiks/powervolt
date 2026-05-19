@@ -70,7 +70,7 @@ export default function Products() {
       const res = await productApi.getAll(params);
       const items = res.data?.items || [];
       setProducts(items);
-      setLowStockCount(items.filter((p) => p.stockQty <= p.lowStockThreshold && p.isActive).length);
+      setLowStockCount(items.filter((p) => p.currentStock <= p.lowStockThreshold && p.isActive).length);
     } catch (err) {
       toast.error(err.message || 'Failed to load products');
     } finally {
@@ -137,19 +137,12 @@ export default function Products() {
 
   // ─── Columns ────────────────────────────────────────────────
   const columns = [
-    { key: 'productName', label: 'Product', render: (val, row) => (
-      <div>
-        <span className="font-semibold">{val}</span>
-        {row.sku && <span className="products__sku">{row.sku}</span>}
-      </div>
-    )},
-    { key: 'category', label: 'Category', render: (val) => (
-      <Badge variant="primary">{CATEGORY_LABELS[val] || val}</Badge>
-    )},
-    { key: 'purchasePrice', label: 'Purchase', align: 'right', render: (val) => formatCurrency(val) },
-    { key: 'salePrice', label: 'Sale', align: 'right', render: (val) => formatCurrency(val) },
-    { key: 'gstPercent', label: 'GST', align: 'center', render: (val) => `${val}%` },
-    { key: 'stockQty', label: 'Stock', align: 'center', render: (val, row) => {
+    { key: 'sku', label: 'SKU Number', render: (val) => <span className="text-gray-500">{val || '—'}</span> },
+    { key: 'productName', label: 'Product Name', render: (val) => <span className="font-semibold">{val}</span> },
+    { key: 'hsnCode', label: 'HSN Code', render: (val) => <span className="text-gray-500">{val || '—'}</span> },
+    { key: 'purchasePrice', label: 'Purchase Price', align: 'right', render: (val) => formatCurrency(val) },
+    { key: 'salePrice', label: 'Sale Price', align: 'right', render: (val) => formatCurrency(val) },
+    { key: 'currentStock', label: 'Stock', align: 'center', render: (val, row) => {
       const isLow = val <= row.lowStockThreshold;
       return (
         <span className={`products__stock ${isLow ? 'products__stock--low' : ''}`}>
@@ -246,7 +239,7 @@ export default function Products() {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, padding: '12px 16px', background: 'var(--color-primary-bg)', borderRadius: 'var(--radius-sm)' }}>
               <div>
                 <span style={{ fontSize: 'var(--font-sm)', color: 'var(--color-text-secondary)' }}>Current Stock</span>
-                <div style={{ fontSize: 'var(--font-xl)', fontWeight: 700, color: 'var(--color-primary)' }}>{stockHistory.product?.stockQty ?? selectedProduct.stockQty} {selectedProduct.unit}</div>
+                <div style={{ fontSize: 'var(--font-xl)', fontWeight: 700, color: 'var(--color-primary)' }}>{stockHistory.product?.currentStock ?? selectedProduct.currentStock} {selectedProduct.unit}</div>
               </div>
               <Button icon={HiOutlineAdjustments} size="sm" variant="secondary" onClick={() => { setShowHistoryModal(false); setShowStockModal(true); }}>Adjust</Button>
             </div>

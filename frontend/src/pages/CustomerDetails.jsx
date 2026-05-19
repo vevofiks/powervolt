@@ -133,7 +133,7 @@ export default function CustomerDetails() {
                 </div>
               )}
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <Badge variant="primary">GSTIN: {customer.gstin || 'No GST'}</Badge>
+                <Badge variant="primary">GSTIN: {customer.gstNumber || 'No GST'}</Badge>
               </div>
             </div>
           </Card>

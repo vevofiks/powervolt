@@ -61,15 +61,15 @@ const getInventoryReport = async () => {
     select: {
       productName: true,
       category: true,
-      stockQty: true,
+      currentStock: true,
       purchasePrice: true,
       salePrice: true,
       unit: true
     }
   });
 
-  const totalValue = products.reduce((acc, p) => acc + (p.stockQty * p.purchasePrice), 0);
-  const potentialRevenue = products.reduce((acc, p) => acc + (p.stockQty * p.salePrice), 0);
+  const totalValue = products.reduce((acc, p) => acc + (p.currentStock * p.purchasePrice), 0);
+  const potentialRevenue = products.reduce((acc, p) => acc + (p.currentStock * p.salePrice), 0);
 
   return {
     products,

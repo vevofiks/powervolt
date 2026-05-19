@@ -30,7 +30,7 @@ const initialState = {
   hsnCode: '',
   purchasePrice: '',
   salePrice: '',
-  stockQty: '',
+  currentStock: '',
   unit: 'Nos',
   lowStockThreshold: '5',
 };
@@ -49,7 +49,7 @@ export default function ProductForm({ product, onSubmit, onCancel, loading }) {
         hsnCode: product.hsnCode || '',
         purchasePrice: product.purchasePrice?.toString() || '0',
         salePrice: product.salePrice?.toString() || '0',
-        stockQty: product.stockQty?.toString() || '0',
+        currentStock: product.currentStock?.toString() || '0',
         unit: product.unit || 'Nos',
         lowStockThreshold: product.lowStockThreshold?.toString() || '5',
       });
@@ -79,8 +79,7 @@ export default function ProductForm({ product, onSubmit, onCancel, loading }) {
       ...form,
       purchasePrice: parseFloat(form.purchasePrice) || 0,
       salePrice: parseFloat(form.salePrice) || 0,
-      gstPercent: 18,
-      stockQty: parseFloat(form.stockQty) || 0,
+      currentStock: parseFloat(form.currentStock) || 0,
       lowStockThreshold: parseFloat(form.lowStockThreshold) || 5,
     });
   };
@@ -100,7 +99,7 @@ export default function ProductForm({ product, onSubmit, onCancel, loading }) {
         <Input label="Purchase Price (₹)" name="purchasePrice" type="number" step="0.01" placeholder="0.00" value={form.purchasePrice} onChange={handleChange} error={errors.purchasePrice} id="input-purchase-price" />
         <Input label="Sale Price (₹)" name="salePrice" type="number" step="0.01" placeholder="0.00" value={form.salePrice} onChange={handleChange} error={errors.salePrice} id="input-sale-price" />
         <Select label="Unit" name="unit" value={form.unit} onChange={handleChange} options={unitOptions} id="select-unit" />
-        <Input label={isEdit ? 'Stock (read-only)' : 'Opening Stock'} name="stockQty" type="number" step="0.01" placeholder="0" value={form.stockQty} onChange={handleChange} disabled={isEdit} id="input-stock" />
+        <Input label={isEdit ? 'Stock (read-only)' : 'Opening Stock'} name="currentStock" type="number" step="0.01" placeholder="0" value={form.currentStock} onChange={handleChange} disabled={isEdit} id="input-stock" />
         <Input label="Low Stock Alert" name="lowStockThreshold" type="number" step="1" placeholder="5" value={form.lowStockThreshold} onChange={handleChange} id="input-low-stock" />
       </div>
 

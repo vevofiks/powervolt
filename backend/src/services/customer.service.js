@@ -18,7 +18,7 @@ const getAll = async (query = {}) => {
     where.OR = [
       { name: { contains: query.search, mode: 'insensitive' } },
       { phone: { contains: query.search, mode: 'insensitive' } },
-      { gstin: { contains: query.search, mode: 'insensitive' } },
+      { gstNumber: { contains: query.search, mode: 'insensitive' } },
       { contactPerson: { contains: query.search, mode: 'insensitive' } },
     ];
   }

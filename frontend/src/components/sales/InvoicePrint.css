@@ -191,16 +191,41 @@
   height: 22px;
 }
 
-.col-sl { width: 30px; }
-.col-product { width: auto; }
-.col-hsn { width: 70px; }
-.col-qty { width: 50px; }
-.col-rate { width: 80px; }
-.col-gst { width: 50px; }
-.col-amount { width: 90px; }
+.col-sl {
+  width: 30px;
+}
 
-.col-center { text-align: center; }
-.col-right { text-align: right; }
+.col-product {
+  width: auto;
+}
+
+.col-hsn {
+  width: 70px;
+}
+
+.col-qty {
+  width: 50px;
+}
+
+.col-rate {
+  width: 80px;
+}
+
+.col-gst {
+  width: 50px;
+}
+
+.col-amount {
+  width: 90px;
+}
+
+.col-center {
+  text-align: center;
+}
+
+.col-right {
+  text-align: right;
+}
 
 .col-product-name {
   text-align: left;
@@ -234,7 +259,8 @@
   padding-right: 12px !important;
 }
 
-.total-qty, .total-amount {
+.total-qty,
+.total-amount {
   font-weight: 700;
   font-size: 12px;
 }
@@ -360,7 +386,8 @@
   border-radius: 50%;
   opacity: 0.85;
   transform: rotate(-3deg);
-  margin-bottom: -40px; /* Overlaps the signature line gap without bleeding upward */
+  margin-bottom: -40px;
+  /* Overlaps the signature line gap without bleeding upward */
   position: relative;
   z-index: 1;
 }
@@ -432,7 +459,13 @@
   }
 
   /* Reset all main layout wrappers so they don't stretch to a 2nd page */
-  html, body, #root, .app-container, .main-content, .page-wrapper, .modal-overlay {
+  html,
+  body,
+  #root,
+  .app-container,
+  .main-content,
+  .page-wrapper,
+  .modal-overlay {
     height: auto !important;
     min-height: 0 !important;
     margin: 0 !important;
@@ -445,7 +478,14 @@
   }
 
   /* Hide sibling elements to the modal so they take 0 space */
-  .sidebar, .app-sidebar, header, nav, .footer, .page-header, .filters-section, .card {
+  .sidebar,
+  .app-sidebar,
+  header,
+  nav,
+  .footer,
+  .page-header,
+  .filters-section,
+  .card {
     display: none !important;
   }
 

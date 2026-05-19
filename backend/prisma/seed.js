@@ -14,7 +14,7 @@ async function main() {
       companyAddress: '45/2, Industrial Park, Bypass Road, Calicut',
       companyPhone: '9876543210',
       companyEmail: 'info@powervolt.in',
-      companyGstin: '32AAAAA0000A1Z5',
+      companyGstNumber: '32AAAAA0000A1Z5',
       invoicePrefix: 'PV',
       currencySymbol: '₹'
     }
@@ -50,7 +50,7 @@ async function main() {
       purchasePrice: 1250,
       salePrice: 1480,
       gstPercent: 18,
-      stockQty: 50,
+      currentStock: 50,
       unit: 'Roll'
     }
   });
@@ -63,7 +63,7 @@ async function main() {
       purchasePrice: 45,
       salePrice: 75,
       gstPercent: 18,
-      stockQty: 200,
+      currentStock: 200,
       unit: 'Nos'
     }
   });
@@ -76,7 +76,7 @@ async function main() {
       purchasePrice: 85,
       salePrice: 140,
       gstPercent: 12,
-      stockQty: 15,
+      currentStock: 15,
       unit: 'Nos',
       lowStockThreshold: 20
     }

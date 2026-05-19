@@ -75,7 +75,7 @@ export default function InvoicePrint({ invoice }) {
             <div className="company-tagline">Electrical Engineering & Services</div>
             <div className="company-info">
               <p>{settings?.companyAddress || '595-B, Amajoor (PO), Krakkunnu, Manjeri, Malappuram (Dist), 676122'}</p>
-              <p>GSTIN: {settings?.companyGstin || '32AANAPL6617R1ZO'} &nbsp;|&nbsp; PAN: {settings?.companyPan || 'ANAPL6617R'}</p>
+              <p>GSTIN: {settings?.companyGstNumber || '32AANAPL6617R1ZO'} &nbsp;|&nbsp; PAN: {settings?.companyPan || 'ANAPL6617R'}</p>
               <p>Contact: {settings?.companyPhone || '9567965664'}</p>
             </div>
           </div>
@@ -114,7 +114,7 @@ export default function InvoicePrint({ invoice }) {
               {invoice.customerState} {invoice.customerPincode}
             </p>
             {invoice.customerPhone && <p>Phone: {invoice.customerPhone}</p>}
-            {invoice.customerGstin && <p>GSTIN: {invoice.customerGstin}</p>}
+            {invoice.customerGstNumber && <p>GSTIN: {invoice.customerGstNumber}</p>}
             <p>State: {invoice.customerState || 'KERALA'}, Code: 32</p>
           </div>
         </div>

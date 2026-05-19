@@ -32,16 +32,16 @@ const recordMovement = async ({ productId, type, quantity, reference, remark, da
     throw ApiError.notFound('Product not found');
   }
 
-  const newStock = product.stockQty + stockChange;
+  const newStock = product.currentStock + stockChange;
 
   if (outTypes.includes(type) && newStock < 0) {
-    throw ApiError.badRequest(`Insufficient stock for ${product.productName}. Available: ${product.stockQty} ${product.unit}`);
+    throw ApiError.badRequest(`Insufficient stock for ${product.productName}. Available: ${product.currentStock} ${product.unit}`);
   }
 
   // 2. Update Product Stock
   await prisma.product.update({
     where: { id: productId },
-    data: { stockQty: newStock },
+    data: { currentStock: newStock },
   });
 
   // 3. Create Stock History Entry

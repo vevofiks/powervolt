@@ -30,9 +30,9 @@ const getAll = async (query = {}) => {
 
   // Low stock filter
   if (query.lowStock === 'true') {
-    where.stockQty = { lte: prisma.raw('\"lowStockThreshold\"') };
+    where.currentStock = { lte: prisma.raw('\"lowStockThreshold\"') };
     // Fallback: filter in application layer
-    delete where.stockQty;
+    delete where.currentStock;
   }
 
   const orderBy = {};
@@ -55,7 +55,7 @@ const getAll = async (query = {}) => {
   // Apply low stock filter in application layer
   let filteredItems = items;
   if (query.lowStock === 'true') {
-    filteredItems = items.filter((p) => p.stockQty <= p.lowStockThreshold);
+    filteredItems = items.filter((p) => p.currentStock <= p.lowStockThreshold);
   }
 
   return {
@@ -106,8 +106,7 @@ const search = async (query = '') => {
       category: true,
       salePrice: true,
       purchasePrice: true,
-      gstPercent: true,
-      stockQty: true,
+      currentStock: true,
       unit: true,
     },
     take: 20,
@@ -121,7 +120,7 @@ const search = async (query = '') => {
  * Create a new product.
  */
 const create = async (data) => {
-  const { productName, category, sku, hsnCode, purchasePrice, salePrice, gstPercent, stockQty, unit, lowStockThreshold } = data;
+  const { productName, category, sku, hsnCode, purchasePrice, salePrice, currentStock, unit, lowStockThreshold } = data;
 
   if (!productName?.trim()) throw ApiError.badRequest('Product name is required');
   if (!category) throw ApiError.badRequest('Category is required');
@@ -146,21 +145,20 @@ const create = async (data) => {
       hsnCode: hsnCode?.trim() || null,
       purchasePrice: parseFloat(purchasePrice) || 0,
       salePrice: parseFloat(salePrice) || 0,
-      gstPercent: parseFloat(gstPercent) || 0,
-      stockQty: parseFloat(stockQty) || 0,
+      currentStock: parseFloat(currentStock) || 0,
       unit: unit || 'Nos',
       lowStockThreshold: parseFloat(lowStockThreshold) || LOW_STOCK_THRESHOLD,
     },
   });
 
   // If initial stock > 0, record stock history
-  if (product.stockQty > 0) {
+  if (product.currentStock > 0) {
     await prisma.stockHistory.create({
       data: {
         productId: product.id,
         type: 'ADJUSTMENT',
-        quantity: product.stockQty,
-        stockAfter: product.stockQty,
+        quantity: product.currentStock,
+        stockAfter: product.currentStock,
         remark: 'Initial stock',
       },
     });
@@ -200,7 +198,7 @@ const update = async (id, data) => {
   const existing = await prisma.product.findUnique({ where: { id } });
   if (!existing) throw ApiError.notFound('Product not found');
 
-  const { productName, category, sku, hsnCode, purchasePrice, salePrice, gstPercent, unit, lowStockThreshold, isActive } = data;
+  const { productName, category, sku, hsnCode, purchasePrice, salePrice, unit, lowStockThreshold, isActive } = data;
 
   // Check duplicate SKU
   if (sku && sku !== existing.sku) {
@@ -224,7 +222,6 @@ const update = async (id, data) => {
       ...(hsnCode !== undefined && { hsnCode: hsnCode?.trim() || null }),
       ...(purchasePrice !== undefined && { purchasePrice: parseFloat(purchasePrice) || 0 }),
       ...(salePrice !== undefined && { salePrice: parseFloat(salePrice) || 0 }),
-      ...(gstPercent !== undefined && { gstPercent: parseFloat(gstPercent) || 0 }),
       ...(unit && { unit }),
       ...(lowStockThreshold !== undefined && { lowStockThreshold: parseFloat(lowStockThreshold) || LOW_STOCK_THRESHOLD }),
       ...(isActive !== undefined && { isActive }),
@@ -261,7 +258,7 @@ const getLowStock = async () => {
     where: { isActive: true },
   });
 
-  return products.filter((p) => p.stockQty <= p.lowStockThreshold);
+  return products.filter((p) => p.currentStock <= p.lowStockThreshold);
 };
 
 /**
@@ -270,7 +267,7 @@ const getLowStock = async () => {
 const getStockHistory = async (productId, query) => {
   const product = await prisma.product.findUnique({
     where: { id: productId },
-    select: { id: true, productName: true, stockQty: true, unit: true },
+    select: { id: true, productName: true, currentStock: true, unit: true },
   });
 
   if (!product) throw ApiError.notFound('Product not found');

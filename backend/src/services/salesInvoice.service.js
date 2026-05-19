@@ -72,7 +72,7 @@ const create = async (data) => {
     customerId,
     customerName,
     customerPhone,
-    customerGstin,
+    customerGstNumber,
     customerAddress1,
     customerAddress2,
     customerCity,
@@ -135,7 +135,6 @@ const create = async (data) => {
       qty: item.qty,
       rate: item.rate,
       purchasePrice: product.purchasePrice,
-      gstPercent: 18,
       amount: itemAmount
     });
 
@@ -168,7 +167,7 @@ const create = async (data) => {
   const customerPayload = {
     name: customerName,
     phone: customerPhone,
-    gstin: customerGstin,
+    gstNumber: customerGstNumber,
     address1: customerAddress1,
     address2: customerAddress2,
     city: customerCity,
@@ -198,7 +197,7 @@ const create = async (data) => {
       customerId: finalCustomerId,
       customerName,
       customerPhone,
-      customerGstin,
+      customerGstNumber,
       customerAddress1,
       customerAddress2,
       customerCity,

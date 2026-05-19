@@ -11,6 +11,8 @@ import {
   HiOutlineChartBar,
   HiOutlineCog,
   HiOutlineCheckCircle,
+  HiOutlineOfficeBuilding,
+  HiOutlineInboxIn,
 } from 'react-icons/hi';
 
 /**
@@ -20,6 +22,8 @@ export const NAV_ITEMS = [
   { label: 'Dashboard', path: '/admin', icon: HiOutlineHome },
   { label: 'Sales Invoice', path: '/admin/sales-invoice', icon: HiOutlineDocumentText },
   { label: 'Customers', path: '/admin/customers', icon: HiOutlineUserGroup },
+  { label: 'Purchase Bills', path: '/admin/purchase-bills', icon: HiOutlineInboxIn },
+  { label: 'Vendors', path: '/admin/vendors', icon: HiOutlineOfficeBuilding },
   { label: 'Products', path: '/admin/products', icon: HiOutlineCube },
   { label: 'Accounts', path: '/admin/accounts', icon: HiOutlineCreditCard },
   { label: 'Expenses', path: '/admin/expenses', icon: HiOutlineCash },

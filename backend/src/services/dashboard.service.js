@@ -27,11 +27,11 @@ const getStats = async () => {
     }),
     // Total Stock Value (qty * purchasePrice)
     prisma.product.findMany({
-      select: { stockQty: true, purchasePrice: true }
+      select: { currentStock: true, purchasePrice: true }
     }),
     // Low Stock Count
     prisma.product.count({
-      where: { stockQty: { lte: prisma.product.lowStockThreshold } }
+      where: { currentStock: { lte: prisma.product.lowStockThreshold } }
     }),
     // Recent Sales
     prisma.salesInvoice.findMany({
@@ -52,7 +52,7 @@ const getStats = async () => {
   ]);
 
   // Calculate stock value manually since it's a derived field
-  const totalStockValue = stockValue.reduce((acc, p) => acc + (p.stockQty * p.purchasePrice), 0);
+  const totalStockValue = stockValue.reduce((acc, p) => acc + (p.currentStock * p.purchasePrice), 0);
 
   return {
     summary: {

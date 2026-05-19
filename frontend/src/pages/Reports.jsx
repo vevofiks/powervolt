@@ -121,9 +121,9 @@ export default function Reports() {
                 <tr key={i}>
                   <td>{p.productName}</td>
                   <td>{p.category}</td>
-                  <td className="text-right">{p.stockQty} {p.unit}</td>
+                  <td className="text-right">{p.currentStock} {p.unit}</td>
                   <td className="text-right">{formatCurrency(p.purchasePrice)}</td>
-                  <td className="text-right font-bold">{formatCurrency(p.stockQty * p.purchasePrice)}</td>
+                  <td className="text-right font-bold">{formatCurrency(p.currentStock * p.purchasePrice)}</td>
                 </tr>
               ))}
             </tbody>

@@ -20,6 +20,11 @@ import Salary from './pages/Salary';
 import Reports from './pages/Reports';
 import Settings from './pages/Settings';
 import LandingPage from './pages/landing/LandingPage';
+import Vendors from './pages/Vendors';
+import PurchaseBills from './pages/PurchaseBills';
+import CreatePurchaseBill from './pages/CreatePurchaseBill';
+import ViewPurchaseBill from './pages/ViewPurchaseBill';
+import VendorDetails from './pages/VendorDetails';
 
 export default function App() {
   return (
@@ -35,6 +40,11 @@ export default function App() {
               <Route path="sales-invoice/create" element={<CreateSalesInvoice />} />
               <Route path="customers" element={<Customers />} />
               <Route path="customers/:id" element={<CustomerDetails />} />
+              <Route path="vendors" element={<Vendors />} />
+              <Route path="vendors/:id" element={<VendorDetails />} />
+              <Route path="purchase-bills" element={<PurchaseBills />} />
+              <Route path="purchase-bills/create" element={<CreatePurchaseBill />} />
+              <Route path="purchase-bills/:id" element={<ViewPurchaseBill />} />
               <Route path="products" element={<Products />} />
               <Route path="accounts" element={<Accounts />} />
               <Route path="accounts/:id" element={<AccountDetails />} />

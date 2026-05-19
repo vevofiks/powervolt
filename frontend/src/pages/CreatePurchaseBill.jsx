@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/ui/PageHeader';
@@ -7,42 +7,39 @@ import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
 import Button from '../components/ui/Button';
 import Modal from '../components/ui/Modal';
-import CustomerForm from '../components/customers/CustomerForm';
-import CustomerSearchInput from '../components/customers/CustomerSearchInput';
+import VendorForm from '../components/vendors/VendorForm';
+import VendorSearchInput from '../components/vendors/VendorSearchInput';
 import ProductForm from '../components/products/ProductForm';
 import ProductSearchInput from '../components/products/ProductSearchInput';
 import { productApi } from '../api/products';
 import { accountApi } from '../api/accounts';
-import { customerApi } from '../api/customers';
-import { salesInvoiceApi } from '../api/salesInvoices';
+import { vendorApi } from '../api/vendors';
+import { purchaseBillApi } from '../api/purchaseBills';
 import { HiOutlinePlus, HiOutlineTrash, HiOutlineSave, HiOutlineArrowLeft, HiOutlineUserAdd, HiOutlineCube } from 'react-icons/hi';
-import './CreateSalesInvoice.css';
+import '../pages/CreateSalesInvoice.css'; // Reusing similar styles
 
-export default function CreateSalesInvoice() {
+export default function CreatePurchaseBill() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [accounts, setAccounts] = useState([]);
-  const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
+  const [isVendorModalOpen, setIsVendorModalOpen] = useState(false);
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [productModalIndex, setProductModalIndex] = useState(null);
   const [productSubmitting, setProductSubmitting] = useState(false);
 
-  const [invoice, setInvoice] = useState({
-    invoiceType: 'NON_GST',
-    customerId: '',
-    customerName: '',
-    customerPhone: '',
-    customerGstNumber: '',
-    customerAddress1: '',
-    customerAddress2: '',
-    customerCity: '',
-    customerState: '',
-    customerPincode: '',
-    items: [{ productId: '', productName: '', sku: '', hsnCode: '', qty: 1, rate: 0, amount: 0 }],
-    discount: 0,
+  const [bill, setBill] = useState({
+    billNo: `PB-${Date.now().toString().slice(-6)}`,
+    billType: 'NON_GST',
+    vendorId: '',
+    vendorName: '',
+    vendorPhone: '',
+    vendorGstNumber: '',
+    items: [{ productId: '', productName: '', sku: '', hsnCode: '', qty: 1, purchasePrice: 0, salePrice: 0, amount: 0 }],
     accountId: '',
     notes: '',
-    date: new Date().toISOString().split('T')[0]
+    terms: '',
+    date: new Date().toISOString().split('T')[0],
+    paymentStatus: 'PAID'
   });
 
   useEffect(() => {
@@ -54,72 +51,72 @@ export default function CreateSalesInvoice() {
       const res = await accountApi.getAll();
       setAccounts(res.data?.items || []);
       if (res.data?.items?.length > 0) {
-        setInvoice(prev => ({ ...prev, accountId: res.data.items[0].id }));
+        setBill(prev => ({ ...prev, accountId: res.data.items[0].id }));
       }
     } catch (err) {
       toast.error('Failed to load accounts');
     }
   };
 
-  // ─── Customer Selection ───────────────────────────────────────
-  const handleCustomerInputChange = (val) => {
-    setInvoice(prev => ({ ...prev, customerName: val, customerId: '' }));
+  // ─── Vendor Selection ───────────────────────────────────────
+  const handleVendorInputChange = (val) => {
+    setBill(prev => ({ ...prev, vendorName: val, vendorId: '' }));
   };
 
-  const selectCustomer = (cust) => {
-    setInvoice(prev => ({
+  const selectVendor = (vendor) => {
+    setBill(prev => ({
       ...prev,
-      customerId: cust.id,
-      customerName: cust.name,
-      customerPhone: cust.phone || '',
-      customerGstNumber: cust.gstNumber || '',
-      customerAddress1: cust.address1 || '',
-      customerAddress2: cust.address2 || '',
-      customerCity: cust.city || '',
-      customerState: cust.state || '',
-      customerPincode: cust.pincode || '',
+      vendorId: vendor.id,
+      vendorName: vendor.name,
+      vendorPhone: vendor.phone || '',
+      vendorGstNumber: vendor.gstNumber || '',
     }));
   };
 
-  const handleAddNewCustomer = (custData) => {
-    setInvoice(prev => ({
-      ...prev,
-      customerId: '',
-      customerName: custData.name,
-      customerPhone: custData.phone,
-      customerGstNumber: custData.gstNumber,
-      customerAddress1: custData.address1,
-      customerAddress2: custData.address2,
-      customerCity: custData.city,
-      customerState: custData.state,
-      customerPincode: custData.pincode,
-    }));
-    setIsCustomerModalOpen(false);
-    toast.success('Customer details filled. Profile will be saved with invoice.');
+  const handleAddNewVendor = async (vendorData) => {
+    try {
+      setLoading(true);
+      const res = await vendorApi.create(vendorData);
+      const newVendor = res.data || vendorData;
+      setBill(prev => ({
+        ...prev,
+        vendorId: newVendor.id,
+        vendorName: newVendor.name,
+        vendorPhone: newVendor.phone,
+        vendorGstNumber: newVendor.gstNumber,
+      }));
+      setIsVendorModalOpen(false);
+      toast.success('Vendor created and selected');
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || 'Failed to add vendor');
+    } finally {
+      setLoading(false);
+    }
   };
 
   // ─── Product Selection ────────────────────────────────────────
   const handleProductInputChange = (index, value) => {
-    const newItems = [...invoice.items];
+    const newItems = [...bill.items];
     newItems[index].productName = value;
     if (newItems[index].productId) {
       newItems[index].productId = '';
     }
-    setInvoice(prev => ({ ...prev, items: newItems }));
+    setBill(prev => ({ ...prev, items: newItems }));
   };
 
   const selectProduct = (index, product) => {
-    const newItems = [...invoice.items];
+    const newItems = [...bill.items];
     newItems[index] = {
       ...newItems[index],
       productId: product.id,
       productName: product.productName,
       sku: product.sku || '',
       hsnCode: product.hsnCode || '',
-      rate: product.salePrice,
-      amount: product.salePrice * newItems[index].qty
+      purchasePrice: product.purchasePrice,
+      salePrice: product.salePrice,
+      amount: product.purchasePrice * newItems[index].qty
     };
-    setInvoice(prev => ({ ...prev, items: newItems }));
+    setBill(prev => ({ ...prev, items: newItems }));
   };
 
   // ─── Quick Add Product (from modal) ───────────────────────────
@@ -134,24 +131,24 @@ export default function CreateSalesInvoice() {
       const res = await productApi.create(productData);
       const newProduct = res.data;
 
-      // Auto-select the newly created product in the relevant row
       if (productModalIndex !== null) {
-        const newItems = [...invoice.items];
+        const newItems = [...bill.items];
         newItems[productModalIndex] = {
           ...newItems[productModalIndex],
           productId: newProduct.id,
           productName: newProduct.productName,
           sku: newProduct.sku || '',
           hsnCode: newProduct.hsnCode || '',
-          rate: newProduct.salePrice,
-          amount: newProduct.salePrice * newItems[productModalIndex].qty
+          purchasePrice: newProduct.purchasePrice,
+          salePrice: newProduct.salePrice,
+          amount: newProduct.purchasePrice * newItems[productModalIndex].qty
         };
-        setInvoice(prev => ({ ...prev, items: newItems }));
+        setBill(prev => ({ ...prev, items: newItems }));
       }
 
       setIsProductModalOpen(false);
       setProductModalIndex(null);
-      toast.success(`Product "${newProduct.productName}" created & added to invoice`);
+      toast.success(`Product "${newProduct.productName}" created & added to bill`);
     } catch (err) {
       toast.error(err.message || 'Failed to create product');
     } finally {
@@ -160,46 +157,46 @@ export default function CreateSalesInvoice() {
   };
 
   const addItem = () => {
-    setInvoice(prev => ({
+    setBill(prev => ({
       ...prev,
-      items: [...prev.items, { productId: '', productName: '', sku: '', hsnCode: '', qty: 1, rate: 0, amount: 0 }]
+      items: [...prev.items, { productId: '', productName: '', sku: '', hsnCode: '', qty: 1, purchasePrice: 0, salePrice: 0, amount: 0 }]
     }));
   };
 
   const removeItem = (index) => {
-    if (invoice.items.length === 1) return;
-    const newItems = invoice.items.filter((_, i) => i !== index);
-    setInvoice(prev => ({ ...prev, items: newItems }));
+    if (bill.items.length === 1) return;
+    const newItems = bill.items.filter((_, i) => i !== index);
+    setBill(prev => ({ ...prev, items: newItems }));
   };
 
   const updateItem = (index, field, value) => {
-    const newItems = [...invoice.items];
+    const newItems = [...bill.items];
     newItems[index][field] = value;
-    if (field === 'qty' || field === 'rate') {
-      newItems[index].amount = newItems[index].qty * newItems[index].rate;
+    if (field === 'qty' || field === 'purchasePrice') {
+      newItems[index].amount = newItems[index].qty * newItems[index].purchasePrice;
     }
-    setInvoice(prev => ({ ...prev, items: newItems }));
+    setBill(prev => ({ ...prev, items: newItems }));
   };
 
   // Calculations
-  const subtotal = invoice.items.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
-  // Fixed GST: 9% CGST + 9% SGST = 18% total
-  const taxAmount = invoice.invoiceType === 'GST' ? subtotal * 0.18 : 0;
-  const totalAmount = subtotal + taxAmount - (parseFloat(invoice.discount) || 0);
+  const subtotal = bill.items.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
+  const taxAmount = bill.billType === 'GST' ? subtotal * 0.18 : 0;
+  const totalAmount = subtotal + taxAmount;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!invoice.customerName) return toast.error('Customer Name is required');
-    if (!invoice.accountId) return toast.error('Please select a payment account');
-    if (invoice.items.some(item => !item.productId)) return toast.error('Please select products for all items');
+    if (!bill.billNo) return toast.error('Bill Number is required');
+    if (!bill.accountId) return toast.error('Please select a payment account');
+    if (bill.items.some(item => !item.productId)) return toast.error('Please select products for all items');
 
     setLoading(true);
     try {
-      await salesInvoiceApi.create(invoice);
-      toast.success('Invoice created successfully');
-      navigate('/admin/sales-invoice');
+      const payload = { ...bill, subtotal, taxAmount, totalAmount };
+      await purchaseBillApi.create(payload);
+      toast.success('Purchase Bill created successfully');
+      navigate('/admin/purchase-bills');
     } catch (err) {
-      toast.error(err.message || 'Failed to create invoice');
+      toast.error(err.response?.data?.message || err.message || 'Failed to create purchase bill');
     } finally {
       setLoading(false);
     }
@@ -208,87 +205,56 @@ export default function CreateSalesInvoice() {
   return (
     <div className="page-wrapper create-invoice">
       <PageHeader
-        title="Create Sales Invoice"
-        subtitle="Generate a new GST or Non-GST invoice"
+        title="Create Purchase Bill"
+        subtitle="Record vendor purchases, manage stock and ledgers"
         actionLabel="Back to History"
         actionIcon={HiOutlineArrowLeft}
-        onAction={() => navigate('/admin/sales-invoice')}
+        onAction={() => navigate('/admin/purchase-bills')}
       />
 
       <form onSubmit={handleSubmit}>
         <div className="invoice-grid">
-          {/* Customer & Header */}
-          <Card className="invoice-card" title="Customer Details">
+          {/* Vendor & Header */}
+          <Card className="invoice-card" title="Vendor & Bill Details">
             <div className="form-grid">
-              <div className="customer-selection-field" style={{ position: 'relative', gridColumn: 'span 2' }}>
-                <CustomerSearchInput
-                  label="Customer Name *"
-                  value={invoice.customerName}
-                  onChange={handleCustomerInputChange}
-                  onSelect={selectCustomer}
-                  onQuickAdd={() => setIsCustomerModalOpen(true)}
-                  hasError={!invoice.customerName}
-                />
-              </div>
-
               <Input
-                label="Phone Number"
-                placeholder="10-digit number"
-                value={invoice.customerPhone}
-                onChange={(e) => setInvoice(prev => ({ ...prev, customerPhone: e.target.value, customerId: '' }))}
+                label="Bill Number *"
+                placeholder="Bill No"
+                value={bill.billNo}
+                onChange={(e) => setBill(prev => ({ ...prev, billNo: e.target.value }))}
+                required
               />
               <Input
-                label="GSTIN"
-                placeholder="Optional"
-                value={invoice.customerGstNumber}
-                onChange={(e) => setInvoice(prev => ({ ...prev, customerGstNumber: e.target.value }))}
+                label="Bill Date"
+                type="date"
+                value={bill.date}
+                onChange={(e) => setBill(prev => ({ ...prev, date: e.target.value }))}
               />
-
-              <div style={{ gridColumn: 'span 2' }}>
-                <Input
-                  label="Address Line 1"
-                  placeholder="Street / Area"
-                  value={invoice.customerAddress1}
-                  onChange={(e) => setInvoice(prev => ({ ...prev, customerAddress1: e.target.value }))}
-                />
-              </div>
-
-              <Input
-                label="City"
-                placeholder="Mumbai"
-                value={invoice.customerCity}
-                onChange={(e) => setInvoice(prev => ({ ...prev, customerCity: e.target.value }))}
-              />
-              <Input
-                label="Pincode"
-                placeholder="6-digit"
-                value={invoice.customerPincode}
-                onChange={(e) => setInvoice(prev => ({ ...prev, customerPincode: e.target.value }))}
-              />
-            </div>
-
-            <div style={{ marginTop: '24px', display: 'flex', gap: '16px' }}>
               <Select
-                label="Invoice Type"
-                value={invoice.invoiceType}
-                onChange={(e) => setInvoice(prev => ({ ...prev, invoiceType: e.target.value }))}
+                label="Bill Type"
+                value={bill.billType}
+                onChange={(e) => setBill(prev => ({ ...prev, billType: e.target.value }))}
                 options={[
-                  { value: 'GST', label: 'GST Invoice' },
-                  { value: 'NON_GST', label: 'Non-GST Invoice' }
+                  { value: 'GST', label: 'GST Bill' },
+                  { value: 'NON_GST', label: 'Non-GST Bill' }
                 ]}
               />
-              <Input
-                label="Invoice Date"
-                type="date"
-                value={invoice.date}
-                max={new Date().toISOString().split('T')[0]}
-                onChange={(e) => setInvoice(prev => ({ ...prev, date: e.target.value }))}
-              />
+
+              <div className="customer-selection-field" style={{ position: 'relative', gridColumn: 'span 2' }}>
+                <VendorSearchInput
+                  label="Vendor Name (Optional)"
+                  value={bill.vendorName}
+                  onChange={handleVendorInputChange}
+                  onSelect={selectVendor}
+                  onQuickAdd={() => setIsVendorModalOpen(true)}
+                  hasError={!bill.vendorName && bill.vendorId} 
+                />
+              </div>
             </div>
           </Card>
 
           {/* Items Section */}
-          <Card className="invoice-card items-card" title="Items">
+          <Card className="invoice-card items-card" title="Products">
             <table className="items-table">
               <thead>
                 <tr>
@@ -296,13 +262,14 @@ export default function CreateSalesInvoice() {
                   <th width="100">SKU</th>
                   <th width="100">HSN</th>
                   <th width="80">Qty</th>
-                  <th width="130">Rate (₹)</th>
+                  <th width="120">Pur. Price (₹)</th>
+                  <th width="120">Sale Price (₹)</th>
                   <th width="130">Amount (₹)</th>
-                  <th width="80"></th>
+                  <th width="60"></th>
                 </tr>
               </thead>
               <tbody>
-                {invoice.items.map((item, index) => (
+                {bill.items.map((item, index) => (
                   <tr key={index}>
                     <td className="product-cell">
                       <ProductSearchInput
@@ -346,8 +313,16 @@ export default function CreateSalesInvoice() {
                       <input
                         type="number"
                         className="item-input"
-                        value={item.rate}
-                        onChange={(e) => updateItem(index, 'rate', parseFloat(e.target.value) || 0)}
+                        value={item.purchasePrice}
+                        onChange={(e) => updateItem(index, 'purchasePrice', parseFloat(e.target.value) || 0)}
+                      />
+                    </td>
+                    <td>
+                      <input
+                        type="number"
+                        className="item-input"
+                        value={item.salePrice}
+                        onChange={(e) => updateItem(index, 'salePrice', parseFloat(e.target.value) || 0)}
                       />
                     </td>
                     <td className="amount-cell">₹{(item.amount || 0).toFixed(2)}</td>
@@ -370,9 +345,9 @@ export default function CreateSalesInvoice() {
             <Card className="invoice-card summary-card" title="Payment & Summary">
               <div className="summary-grid">
                 <Select
-                  label="Receiving Account *"
-                  value={invoice.accountId}
-                  onChange={(e) => setInvoice(prev => ({ ...prev, accountId: e.target.value }))}
+                  label="Paying Account *"
+                  value={bill.accountId}
+                  onChange={(e) => setBill(prev => ({ ...prev, accountId: e.target.value }))}
                   options={accounts.map(acc => ({ value: acc.id, label: `${acc.accountName} (₹${acc.currentBalance})` }))}
                 />
                 <div className="summary-details">
@@ -380,7 +355,7 @@ export default function CreateSalesInvoice() {
                     <span>Subtotal:</span>
                     <span>₹{subtotal.toFixed(2)}</span>
                   </div>
-                  {invoice.invoiceType === 'GST' && (
+                  {bill.billType === 'GST' && (
                     <>
                       <div className="summary-row">
                         <span>CGST @ 9%:</span>
@@ -396,15 +371,6 @@ export default function CreateSalesInvoice() {
                       </div>
                     </>
                   )}
-                  <div className="summary-row">
-                    <span>Discount:</span>
-                    <input
-                      type="number"
-                      className="discount-input"
-                      value={invoice.discount}
-                      onChange={(e) => setInvoice(prev => ({ ...prev, discount: parseFloat(e.target.value) || 0 }))}
-                    />
-                  </div>
                   <div className="summary-row grand-total">
                     <span>Grand Total:</span>
                     <span>₹{totalAmount.toFixed(2)}</span>
@@ -415,13 +381,13 @@ export default function CreateSalesInvoice() {
                 <Input
                   label="Notes"
                   placeholder="Additional information..."
-                  value={invoice.notes}
-                  onChange={(e) => setInvoice(prev => ({ ...prev, notes: e.target.value }))}
+                  value={bill.notes}
+                  onChange={(e) => setBill(prev => ({ ...prev, notes: e.target.value }))}
                 />
               </div>
               <div className="invoice-actions">
                 <Button type="submit" loading={loading} icon={HiOutlineSave} size="lg">
-                  Save & Print Invoice
+                  Save Purchase Bill
                 </Button>
               </div>
             </Card>
@@ -429,11 +395,12 @@ export default function CreateSalesInvoice() {
         </div>
       </form>
 
-      {/* New Customer Modal */}
-      <Modal isOpen={isCustomerModalOpen} onClose={() => setIsCustomerModalOpen(false)} title="Quick Add Customer Profile" size="lg">
-        <CustomerForm
-          onSubmit={handleAddNewCustomer}
-          onCancel={() => setIsCustomerModalOpen(false)}
+      {/* New Vendor Modal */}
+      <Modal isOpen={isVendorModalOpen} onClose={() => setIsVendorModalOpen(false)} title="Quick Add Vendor" size="lg">
+        <VendorForm
+          onSubmit={handleAddNewVendor}
+          onCancel={() => setIsVendorModalOpen(false)}
+          loading={loading}
         />
       </Modal>
 

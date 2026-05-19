@@ -2,13 +2,15 @@ import { useState } from 'react';
 import Input from '../ui/Input';
 import Button from '../ui/Button';
 
-export default function CustomerForm({ customer, onSubmit, onCancel, loading }) {
+export default function VendorForm({ vendor, onSubmit, onCancel, loading }) {
   const [formData, setFormData] = useState({
-    name: customer?.name || '',
-    phone: customer?.phone || '',
-    gstNumber: customer?.gstNumber || '',
-    address1: customer?.address1 || '',
-    city: customer?.city || '',
+    name: vendor?.name || '',
+    phone: vendor?.phone || '',
+    gstNumber: vendor?.gstNumber || '',
+    address: vendor?.address || '',
+    state: vendor?.state || '',
+    email: vendor?.email || '',
+    notes: vendor?.notes || '',
   });
 
   const handleChange = (e) => {
@@ -22,15 +24,15 @@ export default function CustomerForm({ customer, onSubmit, onCancel, loading }) 
   };
 
   return (
-    <form onSubmit={handleSubmit} className="customer-form">
+    <form onSubmit={handleSubmit} className="vendor-form">
       <div className="form-grid">
         <Input 
-          label="Customer Name *" 
+          label="Vendor Name *" 
           name="name"
           required 
           value={formData.name} 
           onChange={handleChange} 
-          placeholder="e.g., John Doe"
+          placeholder="e.g., ABC Electronics"
         />
         <Input 
           label="Phone Number" 
@@ -44,7 +46,15 @@ export default function CustomerForm({ customer, onSubmit, onCancel, loading }) 
           name="gstNumber"
           value={formData.gstNumber} 
           onChange={handleChange} 
-          placeholder="Optional GSTIN"
+          placeholder="e.g., 29ABCDE1234F1Z5"
+        />
+        <Input 
+          label="Email (Optional)" 
+          name="email"
+          type="email"
+          value={formData.email} 
+          onChange={handleChange} 
+          placeholder="vendor@example.com"
         />
       </div>
 
@@ -54,23 +64,30 @@ export default function CustomerForm({ customer, onSubmit, onCancel, loading }) 
       <div className="form-grid">
         <Input 
           label="Address" 
-          name="address1"
-          value={formData.address1} 
+          name="address"
+          value={formData.address} 
           onChange={handleChange} 
           placeholder="Full Address"
         />
         <Input 
-          label="Location / City" 
-          name="city"
-          value={formData.city} 
+          label="State" 
+          name="state"
+          value={formData.state} 
           onChange={handleChange} 
-          placeholder="e.g., Mumbai"
+          placeholder="e.g., Maharashtra"
+        />
+        <Input 
+          label="Notes (Optional)" 
+          name="notes"
+          value={formData.notes} 
+          onChange={handleChange} 
+          placeholder="Any extra details"
         />
       </div>
 
       <div className="modal-actions" style={{ marginTop: '32px', display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
         <Button type="button" variant="secondary" onClick={onCancel}>Cancel</Button>
-        <Button type="submit" loading={loading}>{customer ? 'Update Customer' : 'Save Customer'}</Button>
+        <Button type="submit" loading={loading}>{vendor ? 'Update Vendor' : 'Save Vendor'}</Button>
       </div>
     </form>
   );

@@ -39,7 +39,7 @@ export default function StockAdjustmentForm({ product, onSubmit, onCancel, loadi
     <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {product && (
         <div style={{ padding: '12px 16px', background: 'var(--color-primary-bg)', borderRadius: 'var(--radius-sm)', fontSize: 'var(--font-sm)' }}>
-          <strong>{product.productName}</strong> — Current Stock: <strong>{product.stockQty} {product.unit}</strong>
+          <strong>{product.productName}</strong> — Current Stock: <strong>{product.currentStock} {product.unit}</strong>
         </div>
       )}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
