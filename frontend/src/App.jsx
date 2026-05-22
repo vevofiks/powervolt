@@ -5,6 +5,9 @@ import ErrorBoundary from './components/common/ErrorBoundary';
 import Dashboard from './pages/Dashboard';
 import SalesInvoice from './pages/SalesInvoice';
 import CreateSalesInvoice from './pages/CreateSalesInvoice';
+import ServiceInvoices from './pages/ServiceInvoices';
+import CreateServiceInvoice from './pages/CreateServiceInvoice';
+import ViewServiceInvoice from './pages/ViewServiceInvoice';
 import Customers from './pages/Customers';
 import CustomerDetails from './pages/CustomerDetails';
 import Products from './pages/Products';
@@ -38,6 +41,9 @@ export default function App() {
               <Route index element={<Dashboard />} />
               <Route path="sales-invoice" element={<SalesInvoice />} />
               <Route path="sales-invoice/create" element={<CreateSalesInvoice />} />
+              <Route path="service-invoice" element={<ServiceInvoices />} />
+              <Route path="service-invoice/create" element={<CreateServiceInvoice />} />
+              <Route path="service-invoice/:id" element={<ViewServiceInvoice />} />
               <Route path="customers" element={<Customers />} />
               <Route path="customers/:id" element={<CustomerDetails />} />
               <Route path="vendors" element={<Vendors />} />

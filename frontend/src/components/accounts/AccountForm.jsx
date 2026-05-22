@@ -7,6 +7,8 @@ const initialState = {
   accountName: '',
   bankName: '',
   accountNumber: '',
+  branch: '',
+  ifscCode: '',
   openingBalance: '',
   notes: '',
 };
@@ -22,6 +24,8 @@ export default function AccountForm({ account, onSubmit, onCancel, loading }) {
         accountName: account.accountName || '',
         bankName: account.bankName || '',
         accountNumber: account.accountNumber || '',
+        branch: account.branch || '',
+        ifscCode: account.ifscCode || '',
         openingBalance: account.openingBalance?.toString() || '0',
         notes: account.notes || '',
       });
@@ -80,6 +84,20 @@ export default function AccountForm({ account, onSubmit, onCancel, loading }) {
           value={form.accountNumber}
           onChange={handleChange}
           id="input-account-number"
+        />
+        <Input
+          label="Branch"
+          name="branch"
+          placeholder="Optional"
+          value={form.branch}
+          onChange={handleChange}
+        />
+        <Input
+          label="IFSC Code"
+          name="ifscCode"
+          placeholder="Optional"
+          value={form.ifscCode}
+          onChange={handleChange}
         />
         <Input
           label={isEdit ? 'Opening Balance (read-only)' : 'Opening Balance (₹)'}

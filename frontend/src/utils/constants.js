@@ -21,6 +21,7 @@ import {
 export const NAV_ITEMS = [
   { label: 'Dashboard', path: '/admin', icon: HiOutlineHome },
   { label: 'Sales Invoice', path: '/admin/sales-invoice', icon: HiOutlineDocumentText },
+  { label: 'Service Invoice', path: '/admin/service-invoice', icon: HiOutlineDocumentText },
   { label: 'Customers', path: '/admin/customers', icon: HiOutlineUserGroup },
   { label: 'Purchase Bills', path: '/admin/purchase-bills', icon: HiOutlineInboxIn },
   { label: 'Vendors', path: '/admin/vendors', icon: HiOutlineOfficeBuilding },

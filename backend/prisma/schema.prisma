@@ -69,8 +69,9 @@ model Customer {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  salesInvoices SalesInvoice[]
-  workSites     WorkSite[]
+  salesInvoices   SalesInvoice[]
+  serviceInvoices ServiceInvoice[]
+  workSites       WorkSite[]
 
   @@index([name])
   @@index([phone])
@@ -210,11 +211,54 @@ model PurchaseBillItem {
   @@index([productId])
 }
 
+model ServiceInvoice {
+  id          String   @id @default(uuid())
+  invoiceNo   String   @unique
+  date        DateTime @default(now())
+
+  customerId        String?
+  customer          Customer? @relation(fields: [customerId], references: [id])
+  customerName      String?
+
+  totalAmount Float @default(0)
+
+  accountId String
+  account   Account @relation(fields: [accountId], references: [id])
+
+  items ServiceInvoiceItem[]
+
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([invoiceNo])
+  @@index([date])
+  @@index([customerId])
+}
+
+model ServiceInvoiceItem {
+  id               String         @id @default(uuid())
+  serviceInvoiceId String
+  invoice          ServiceInvoice @relation(fields: [serviceInvoiceId], references: [id], onDelete: Cascade)
+
+  description String
+  qty         Float?
+  rate        Float?
+  amount      Float
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([serviceInvoiceId])
+}
+
 model Account {
   id             String   @id @default(uuid())
   accountName    String
   bankName       String?
   accountNumber  String?
+  branch         String?
+  ifscCode       String?
   openingBalance Float    @default(0)
   currentBalance Float    @default(0)
   notes          String?
@@ -225,6 +269,7 @@ model Account {
   ledgerTransactions LedgerTransaction[]
   salesInvoices      SalesInvoice[]
   purchaseBills      PurchaseBill[]
+  serviceInvoices    ServiceInvoice[]
   expenses           Expense[]
   salaries           SalaryPayment[]
 

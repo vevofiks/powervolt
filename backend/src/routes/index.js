@@ -3,6 +3,7 @@ const router = require('express').Router();
 // ─── Mount All Routes ─────────────────────────────────────────
 router.use('/dashboard', require('./dashboard.routes'));
 router.use('/sales-invoices', require('./salesInvoice.routes'));
+router.use('/service-invoices', require('./serviceInvoice.routes'));
 router.use('/customers', require('./customer.routes'));
 router.use('/products', require('./product.routes'));
 router.use('/accounts', require('./account.routes'));

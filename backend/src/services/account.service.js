@@ -74,7 +74,7 @@ const getById = async (id) => {
  * Create a new account.
  */
 const create = async (data) => {
-  const { accountName, bankName, accountNumber, openingBalance, notes } = data;
+  const { accountName, bankName, accountNumber, branch, ifscCode, openingBalance, notes } = data;
 
   if (!accountName || !accountName.trim()) {
     throw ApiError.badRequest('Account name is required');
@@ -96,6 +96,8 @@ const create = async (data) => {
       accountName: accountName.trim(),
       bankName: bankName?.trim() || null,
       accountNumber: accountNumber?.trim() || null,
+      branch: branch?.trim() || null,
+      ifscCode: ifscCode?.trim() || null,
       openingBalance: balance,
       currentBalance: balance,
       notes: notes?.trim() || null,
@@ -114,7 +116,7 @@ const update = async (id, data) => {
     throw ApiError.notFound('Account not found');
   }
 
-  const { accountName, bankName, accountNumber, notes, isActive } = data;
+  const { accountName, bankName, accountNumber, branch, ifscCode, notes, isActive } = data;
 
   // Check for duplicate name (exclude current account)
   if (accountName) {
@@ -135,6 +137,8 @@ const update = async (id, data) => {
       ...(accountName && { accountName: accountName.trim() }),
       ...(bankName !== undefined && { bankName: bankName?.trim() || null }),
       ...(accountNumber !== undefined && { accountNumber: accountNumber?.trim() || null }),
+      ...(branch !== undefined && { branch: branch?.trim() || null }),
+      ...(ifscCode !== undefined && { ifscCode: ifscCode?.trim() || null }),
       ...(notes !== undefined && { notes: notes?.trim() || null }),
       ...(isActive !== undefined && { isActive }),
     },

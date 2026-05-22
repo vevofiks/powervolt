@@ -1,0 +1,58 @@
+/* Service Invoice specific print styles */
+.service-invoice-preview-container {
+  background: white;
+  padding: 40px;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  margin-bottom: 40px;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+  color: black !important;
+  font-family: 'Times New Roman', Times, serif; /* Gives it that classic rigid invoice look */
+}
+
+.service-invoice-print-area {
+  padding: 20px;
+}
+
+.si-table th, .si-table td {
+  border-color: black !important;
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 0; /* Removes browser URL/Date headers and footers */
+  }
+
+  body * {
+    visibility: hidden;
+  }
+
+  .service-invoice-print-area,
+  .service-invoice-print-area * {
+    visibility: visible;
+  }
+
+  .service-invoice-print-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 20mm 15mm; /* Professional padding away from page edge */
+  }
+
+  .page-wrapper {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .service-invoice-preview-container {
+    box-shadow: none;
+    padding: 0;
+    max-width: none;
+    margin: 0;
+  }
+}
