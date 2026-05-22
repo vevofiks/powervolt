@@ -89,7 +89,6 @@ export default function ProductForm({ product, onSubmit, onCancel, loading }) {
       <div className="product-form__grid">
         <Input label="Product Name *" name="productName" placeholder="e.g., Finolex 1.5mm Wire" value={form.productName} onChange={handleChange} error={errors.productName} id="input-product-name" />
         <Select label="Category *" name="category" value={form.category} onChange={handleChange} options={categoryOptions} error={errors.category} id="select-category" />
-        <Input label="SKU" name="sku" placeholder="Optional" value={form.sku} onChange={handleChange} id="input-sku" />
         <Input label="HSN Code" name="hsnCode" placeholder="e.g., 8544" value={form.hsnCode} onChange={handleChange} id="input-hsn" />
       </div>
 

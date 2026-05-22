@@ -131,9 +131,23 @@ const create = async (data) => {
     throw ApiError.badRequest(`Invalid category. Must be one of: ${validCategories.join(', ')}`);
   }
 
-  // Check duplicate SKU
-  if (sku) {
-    const existing = await prisma.product.findUnique({ where: { sku } });
+  // Handle SKU Generation
+  let finalSku = sku?.trim() || null;
+  if (!finalSku) {
+    // Generate sequential SKU starting from 0001
+    let skuNumber = await prisma.product.count() + 1;
+    finalSku = String(skuNumber).padStart(4, '0');
+    
+    // Ensure uniqueness
+    let existing = await prisma.product.findUnique({ where: { sku: finalSku } });
+    while (existing) {
+      skuNumber++;
+      finalSku = String(skuNumber).padStart(4, '0');
+      existing = await prisma.product.findUnique({ where: { sku: finalSku } });
+    }
+  } else {
+    // Check duplicate if manually provided
+    const existing = await prisma.product.findUnique({ where: { sku: finalSku } });
     if (existing) throw ApiError.badRequest('A product with this SKU already exists');
   }
 
@@ -141,7 +155,7 @@ const create = async (data) => {
     data: {
       productName: productName.trim(),
       category,
-      sku: sku?.trim() || null,
+      sku: finalSku,
       hsnCode: hsnCode?.trim() || null,
       purchasePrice: parseFloat(purchasePrice) || 0,
       salePrice: parseFloat(salePrice) || 0,

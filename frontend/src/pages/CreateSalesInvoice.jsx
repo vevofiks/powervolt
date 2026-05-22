@@ -45,6 +45,30 @@ export default function CreateSalesInvoice() {
     date: new Date().toISOString().split('T')[0]
   });
 
+  // Load draft on mount
+  useEffect(() => {
+    const savedDraft = localStorage.getItem('salesInvoiceDraft');
+    if (savedDraft) {
+      try {
+        const parsed = JSON.parse(savedDraft);
+        if (window.confirm('You have an unsaved invoice draft. Would you like to restore it?')) {
+          setInvoice(parsed);
+        } else {
+          localStorage.removeItem('salesInvoiceDraft');
+        }
+      } catch (e) {
+        localStorage.removeItem('salesInvoiceDraft');
+      }
+    }
+  }, []);
+
+  // Auto-save draft when invoice changes
+  useEffect(() => {
+    if (invoice.customerName || invoice.items.some(i => i.productName)) {
+      localStorage.setItem('salesInvoiceDraft', JSON.stringify(invoice));
+    }
+  }, [invoice]);
+
   useEffect(() => {
     fetchAccounts();
   }, []);
@@ -197,6 +221,7 @@ export default function CreateSalesInvoice() {
     try {
       await salesInvoiceApi.create(invoice);
       toast.success('Invoice created successfully');
+      localStorage.removeItem('salesInvoiceDraft');
       navigate('/admin/sales-invoice');
     } catch (err) {
       toast.error(err.message || 'Failed to create invoice');

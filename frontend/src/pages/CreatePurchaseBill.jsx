@@ -42,6 +42,30 @@ export default function CreatePurchaseBill() {
     paymentStatus: 'PAID'
   });
 
+  // Load draft on mount
+  useEffect(() => {
+    const savedDraft = localStorage.getItem('purchaseBillDraft');
+    if (savedDraft) {
+      try {
+        const parsed = JSON.parse(savedDraft);
+        if (window.confirm('You have an unsaved purchase bill draft. Would you like to restore it?')) {
+          setBill(parsed);
+        } else {
+          localStorage.removeItem('purchaseBillDraft');
+        }
+      } catch (e) {
+        localStorage.removeItem('purchaseBillDraft');
+      }
+    }
+  }, []);
+
+  // Auto-save draft when bill changes
+  useEffect(() => {
+    if (bill.vendorName || bill.items.some(i => i.productName)) {
+      localStorage.setItem('purchaseBillDraft', JSON.stringify(bill));
+    }
+  }, [bill]);
+
   useEffect(() => {
     fetchAccounts();
   }, []);
@@ -194,6 +218,7 @@ export default function CreatePurchaseBill() {
       const payload = { ...bill, subtotal, taxAmount, totalAmount };
       await purchaseBillApi.create(payload);
       toast.success('Purchase Bill created successfully');
+      localStorage.removeItem('purchaseBillDraft');
       navigate('/admin/purchase-bills');
     } catch (err) {
       toast.error(err.response?.data?.message || err.message || 'Failed to create purchase bill');
