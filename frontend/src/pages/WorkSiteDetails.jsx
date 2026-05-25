@@ -134,6 +134,17 @@ export default function WorkSiteDetails() {
     }
   };
 
+  const handleDeleteEntry = async (entryId) => {
+    if (!window.confirm('Delete this work entry?')) return;
+    try {
+      await workSiteApi.deleteWorkEntry(entryId);
+      toast.success('Work entry deleted');
+      fetchDetails();
+    } catch (err) {
+      toast.error('Failed to delete work entry');
+    }
+  };
+
   if (loading) return <div className="page-wrapper">Loading site details...</div>;
   if (!site) return null;
 
@@ -230,7 +241,17 @@ export default function WorkSiteDetails() {
                     return <Badge>{val}</Badge>;
                   }},
                   { key: 'amount', label: 'Amount', render: (val) => formatCurrency(val) },
-                  { key: 'notes', label: 'Remarks', render: (val) => val || '—' }
+                  { key: 'notes', label: 'Remarks', render: (val) => val || '—' },
+                  { key: 'actions', label: '', render: (_, row) => (
+                    <button 
+                      type="button"
+                      className="text-red-500 hover:text-red-700 p-1" 
+                      onClick={() => handleDeleteEntry(row.id)}
+                      title="Delete Entry"
+                    >
+                      <HiOutlineTrash />
+                    </button>
+                  )}
                 ]}
                 data={site.workEntries}
               />

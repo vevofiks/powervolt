@@ -90,8 +90,17 @@ const getById = async (id) => {
   });
   if (!site) throw ApiError.notFound('Work Site not found');
 
-  const totalExpenses = site.expenses.reduce((sum, e) => sum + e.amount, 0);
-  const totalLaborCost = site.workEntries.reduce((sum, e) => sum + e.amount, 0);
+  const expensesAgg = await prisma.expense.aggregate({
+    where: { workSiteId: id },
+    _sum: { amount: true }
+  });
+  const entriesAgg = await prisma.siteWorkEntry.aggregate({
+    where: { workSiteId: id },
+    _sum: { amount: true }
+  });
+
+  const totalExpenses = expensesAgg._sum.amount || 0;
+  const totalLaborCost = entriesAgg._sum.amount || 0;
 
   return {
     ...site,
