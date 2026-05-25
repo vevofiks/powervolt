@@ -13,7 +13,7 @@ import { workSiteApi } from '../api/workSites';
 import { workerApi } from '../api/workers';
 import { formatCurrency } from '../utils/formatCurrency';
 import { formatDate } from '../utils/formatDate';
-import { HiOutlineArrowLeft, HiOutlineUserAdd, HiOutlineClipboardList, HiOutlineCurrencyRupee, HiOutlineTrash, HiOutlineChartPie } from 'react-icons/hi';
+import { HiOutlineArrowLeft, HiOutlineUserAdd, HiOutlineClipboardList, HiOutlineCurrencyRupee, HiOutlineTrash, HiOutlineChartPie, HiOutlinePlus } from 'react-icons/hi';
 import './WorkSiteDetails.css';
 
 export default function WorkSiteDetails() {
