@@ -67,19 +67,18 @@ export default function WorkSiteDetails() {
     if (entryData.workerId) {
       const worker = allWorkers.find(w => w.id === entryData.workerId);
       if (worker) {
-        let rate = entryData.rate;
-        if (entryData.workType === 'FULL_DAY') rate = worker.fullDayRate;
-        else if (entryData.workType === 'HALF_DAY') rate = worker.halfDayRate;
+        let fullRate = parseFloat(worker.fullDayRate) || 0;
+        let amount = fullRate;
         
-        let amount = rate;
-        if (entryData.workType === 'OVERTIME' && entryData.hours) {
-          amount = (parseFloat(rate) || 0) * (parseFloat(entryData.hours) || 0);
-        }
+        if (entryData.workType === 'FULL_DAY') amount = fullRate;
+        else if (entryData.workType === 'HALF_DAY') amount = parseFloat(worker.halfDayRate) || (fullRate * 0.5);
+        else if (entryData.workType === 'ONE_AND_HALF_DAY') amount = fullRate * 1.5;
+        else if (entryData.workType === 'TWO_DAYS') amount = fullRate * 2.0;
 
-        setEntryData(prev => ({ ...prev, rate: rate, amount: amount }));
+        setEntryData(prev => ({ ...prev, rate: fullRate, amount: amount }));
       }
     }
-  }, [entryData.workerId, entryData.workType, entryData.hours, allWorkers]);
+  }, [entryData.workerId, entryData.workType, allWorkers]);
 
   const handleAddEntry = async (e) => {
     e.preventDefault();
@@ -171,27 +170,17 @@ export default function WorkSiteDetails() {
       <div className="tab-content">
         {activeTab === 'overview' && (
           <div className="overview-tab">
-            <div className="stats-row">
-              <Card title="Project Cost" className="stat-card primary">
-                <div className="stat-val">{formatCurrency(site.stats.totalSiteCost)}</div>
-                <div className="stat-label">Total investment so far</div>
-              </Card>
-              <Card title="Labor Cost" className="stat-card">
-                <div className="stat-val">{formatCurrency(site.stats.totalLaborCost)}</div>
-                <div className="stat-label">Earnings by workers</div>
-              </Card>
-              <Card title="Material/Expenses" className="stat-card">
-                <div className="stat-val">{formatCurrency(site.stats.totalExpenses)}</div>
-                <div className="stat-label">Other site expenditures</div>
-              </Card>
-            </div>
-            
-            <Card title="Project Info" style={{ marginTop: '24px' }}>
+            <Card title="Project Info">
               <div className="info-grid">
                 <div className="info-item"><label>Start Date</label><span>{formatDate(site.startDate)}</span></div>
-                <div className="info-item"><label>Budget Utilization</label><span>{site.budget > 0 ? ((site.stats.totalSiteCost / site.budget) * 100).toFixed(1) + '%' : 'N/A'}</span></div>
+                <div className="info-item"><label>End Date</label><span>{site.endDate ? formatDate(site.endDate) : '—'}</span></div>
                 <div className="info-item"><label>Status</label><Badge variant="primary">{site.status}</Badge></div>
-                <div className="info-item"><label>Notes</label><span>{site.notes || '—'}</span></div>
+                <div className="info-item"><label>Budget</label><span>{site.budget > 0 ? formatCurrency(site.budget) : 'N/A'}</span></div>
+                <div className="info-item"><label>Budget Used</label><span>{site.budget > 0 ? ((site.stats.totalSiteCost / site.budget) * 100).toFixed(1) + '%' : 'N/A'}</span></div>
+                <div className="info-item"><label>Labor Cost</label><span>{formatCurrency(site.stats.totalLaborCost)}</span></div>
+                <div className="info-item"><label>Expenses</label><span>{formatCurrency(site.stats.totalExpenses)}</span></div>
+                <div className="info-item"><label>Total Cost</label><span style={{ fontWeight: 700 }}>{formatCurrency(site.stats.totalSiteCost)}</span></div>
+                <div className="info-item" style={{ gridColumn: 'span 2' }}><label>Notes</label><span>{site.notes || '—'}</span></div>
               </div>
             </Card>
           </div>
@@ -234,9 +223,10 @@ export default function WorkSiteDetails() {
                   { key: 'date', label: 'Date', render: (val) => formatDate(val) },
                   { key: 'worker', label: 'Worker', render: (val) => val?.name },
                   { key: 'workType', label: 'Status', render: (val) => {
-                    if (val === 'FULL_DAY') return <Badge variant="success">Present</Badge>;
+                    if (val === 'FULL_DAY') return <Badge variant="success">1 Day</Badge>;
                     if (val === 'HALF_DAY') return <Badge variant="warning">Half Day</Badge>;
-                    if (val === 'OVERTIME') return <Badge variant="primary">Overtime</Badge>;
+                    if (val === 'ONE_AND_HALF_DAY') return <Badge variant="primary">1.5 Days</Badge>;
+                    if (val === 'TWO_DAYS') return <Badge variant="primary">2 Days</Badge>;
                     return <Badge>{val}</Badge>;
                   }},
                   { key: 'amount', label: 'Amount', render: (val) => formatCurrency(val) },
@@ -306,16 +296,14 @@ export default function WorkSiteDetails() {
               label="Work Type *" 
               required
               options={[
-                { value: 'FULL_DAY', label: 'Full Day' },
+                { value: 'FULL_DAY', label: '1 Day' },
                 { value: 'HALF_DAY', label: 'Half Day' },
-                { value: 'OVERTIME', label: 'Overtime (Hourly)' }
+                { value: 'ONE_AND_HALF_DAY', label: '1.5 Days' },
+                { value: 'TWO_DAYS', label: '2 Days' }
               ]}
               value={entryData.workType}
               onChange={e => setEntryData({...entryData, workType: e.target.value})}
             />
-            {entryData.workType === 'OVERTIME' && (
-              <Input label="Hours" type="number" placeholder="e.g. 2" value={entryData.hours} onChange={e => setEntryData({...entryData, hours: e.target.value})} />
-            )}
           </div>
           <div className="form-row">
             <Input label="Calculated Rate (₹)" type="number" value={entryData.rate} readOnly />

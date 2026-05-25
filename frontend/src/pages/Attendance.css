@@ -13,7 +13,19 @@
   gap: 20px;
 }
 
-@media (max-width: 768px) {
+/* Chrome, Safari, Edge, Opera */
+.attendance-page input::-webkit-outer-spin-button,
+.attendance-page input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+.attendance-page input[type=number] {
+  -moz-appearance: textfield;
+}
+
+@media (max-width: 1024px) {
   .filter-grid {
     grid-template-columns: 1fr;
   }

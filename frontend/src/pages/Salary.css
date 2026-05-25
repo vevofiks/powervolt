@@ -2,35 +2,10 @@
   padding-bottom: 40px;
 }
 
-.salary-filters {
-  margin-bottom: var(--spacing-lg);
-}
-
 .filter-row {
   display: flex;
   align-items: flex-end;
   gap: var(--spacing-md);
-}
-
-.date-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.date-group label {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--color-text-muted);
-  text-transform: uppercase;
-}
-
-.date-group input {
-  padding: 8px 12px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-sm);
-  background: var(--color-background);
-  color: var(--color-text);
 }
 
 .worker-cell {
@@ -38,9 +13,197 @@
   flex-direction: column;
 }
 
-.text-green { color: #16a34a; }
-.text-red { color: #dc2626; }
+/* ── Salary Table ── */
+.salary-table-wrapper {
+  overflow-x: auto;
+}
 
+.salary-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.salary-table thead tr {
+  background: var(--color-bg-secondary, #f8fafc);
+  border-bottom: 2px solid var(--color-border, #e2e8f0);
+}
+
+.salary-table th {
+  padding: 10px 14px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--color-text-muted, #64748b);
+  white-space: nowrap;
+}
+
+.salary-table td {
+  padding: 12px 14px;
+  font-size: 13px;
+  border-bottom: 1px solid var(--color-border-light, #f1f5f9);
+  vertical-align: middle;
+}
+
+.salary-main-row:hover td {
+  background: var(--color-bg-hover, #f8fafc);
+}
+
+.salary-main-row.expanded td {
+  background: var(--color-bg-secondary, #f1f5f9);
+  border-bottom: none;
+}
+
+.text-right { text-align: right; }
+.text-green { color: #16a34a; }
+.text-red   { color: #dc2626; }
+.text-blue  { color: #2563eb; }
+
+/* Expand button */
+.expand-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-muted, #64748b);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 4px;
+  font-size: 16px;
+  transition: background 0.15s, color 0.15s;
+}
+
+.expand-btn:hover {
+  background: var(--color-border, #e2e8f0);
+  color: var(--color-primary, #6366f1);
+}
+
+/* Detail expanded row */
+.salary-detail-row td {
+  padding: 0 !important;
+  border-bottom: 2px solid var(--color-border, #e2e8f0) !important;
+  background: var(--color-bg-secondary, #f8fafc) !important;
+}
+
+.detail-cell {
+  padding: 0 !important;
+}
+
+/* Site breakdown container */
+.site-breakdown {
+  padding: 12px 24px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.no-entries {
+  color: var(--color-text-muted);
+  font-size: 13px;
+  padding: 8px 0;
+}
+
+/* Per-site section */
+.breakdown-section {
+  border: 1px solid var(--color-border, #e2e8f0);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.breakdown-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.site-header {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.site-header-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.allowance-header {
+  background: #f0fdf4;
+  color: #15803d;
+  cursor: default;
+}
+
+.deduction-header {
+  background: #fef2f2;
+  color: #b91c1c;
+  cursor: default;
+}
+
+.payment-header {
+  background: #eff6ff;
+  color: #1d4ed8;
+  cursor: default;
+}
+
+/* Inner breakdown table */
+.breakdown-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.breakdown-table th {
+  background: var(--color-bg-secondary, #f8fafc);
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-muted, #64748b);
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--color-border, #e2e8f0);
+}
+
+.breakdown-table td {
+  padding: 7px 12px;
+  font-size: 12px;
+  border-bottom: 1px solid var(--color-border-light, #f1f5f9);
+}
+
+.breakdown-table tr:last-child td {
+  border-bottom: none;
+}
+
+/* Action buttons in table */
+.action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.action-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  border-radius: 4px;
+  transition: background 0.15s;
+}
+
+.action-btn:hover {
+  background: var(--color-border-light, #f1f5f9);
+}
+
+/* Pay Modal */
 .pay-form {
   display: flex;
   flex-direction: column;
@@ -48,7 +211,7 @@
 }
 
 .pay-summary {
-  background: var(--color-bg);
+  background: var(--color-bg, #f8fafc);
   padding: var(--spacing-lg);
   border-radius: var(--radius-md);
   border: 1px solid var(--color-border-light);
@@ -71,6 +234,39 @@
 .pay-row.highlight strong {
   color: var(--color-primary);
   font-size: 18px;
+}
+
+.action-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+
+.site-header-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.site-settle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #16a34a;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+.site-settle-btn:hover {
+  background: #15803d;
 }
 
 @media (max-width: 640px) {

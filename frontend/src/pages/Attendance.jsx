@@ -21,7 +21,7 @@ export default function Attendance() {
 
   const fetchSites = useCallback(async () => {
     try {
-      const res = await workSiteApi.getAll({ status: 'RUNNING', limit: 100 });
+      const res = await workSiteApi.getAll({ limit: 100 });
       setSites(res.data?.items || []);
     } catch (err) {
       toast.error('Failed to load work sites');
@@ -79,21 +79,26 @@ export default function Attendance() {
       const newEntry = { ...entry, [field]: value };
       
       // Auto-calculate if needed
-      if (field === 'workType' || field === 'hours' || field === 'present') {
+      if (field === 'workType' || field === 'present') {
         if (!newEntry.present) {
           newEntry.amount = 0;
           newEntry.rate = 0;
         } else {
-          let rate = entry.rate;
-          if (newEntry.workType === 'FULL_DAY') rate = entry.fullDayRate;
-          else if (newEntry.workType === 'HALF_DAY') rate = entry.halfDayRate;
+          const fullRate = parseFloat(entry.fullDayRate) || 0;
+          let calculatedAmount = fullRate;
           
-          newEntry.rate = rate;
-          newEntry.amount = rate;
-          
-          if (newEntry.workType === 'OVERTIME' && newEntry.hours) {
-            newEntry.amount = (parseFloat(rate) || 0) * (parseFloat(newEntry.hours) || 0);
+          if (newEntry.workType === 'FULL_DAY') {
+            calculatedAmount = fullRate;
+          } else if (newEntry.workType === 'HALF_DAY') {
+            calculatedAmount = parseFloat(entry.halfDayRate) || (fullRate * 0.5);
+          } else if (newEntry.workType === 'ONE_AND_HALF_DAY') {
+            calculatedAmount = fullRate * 1.5;
+          } else if (newEntry.workType === 'TWO_DAYS') {
+            calculatedAmount = fullRate * 2.0;
           }
+          
+          newEntry.rate = fullRate; // Keep base rate as full day rate for reference
+          newEntry.amount = calculatedAmount;
         }
       }
       
@@ -221,7 +226,6 @@ export default function Attendance() {
                     <th>Worker</th>
                     <th>Status</th>
                     <th>Work Type</th>
-                    <th>OT Hours</th>
                     <th>Amount (₹)</th>
                     <th>Travel (₹)</th>
                     <th>Food (₹)</th>
@@ -271,20 +275,11 @@ export default function Attendance() {
                           value={entry.workType}
                           onChange={e => updateEntry(entry.workerId, 'workType', e.target.value)}
                         >
-                          <option value="FULL_DAY">Full Day</option>
+                          <option value="FULL_DAY">1 Day</option>
                           <option value="HALF_DAY">Half Day</option>
-                          <option value="OVERTIME">Overtime</option>
+                          <option value="ONE_AND_HALF_DAY">1.5 Days</option>
+                          <option value="TWO_DAYS">2 Days</option>
                         </select>
-                      </td>
-                      <td>
-                        <input 
-                          type="number" 
-                          className="table-input small"
-                          disabled={!entry.present || entry.workType !== 'OVERTIME' || !selectedWorkerIds.includes(entry.workerId)}
-                          placeholder="0"
-                          value={entry.hours}
-                          onChange={e => updateEntry(entry.workerId, 'hours', e.target.value)}
-                        />
                       </td>
                       <td>
                         <input 

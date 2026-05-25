@@ -21,6 +21,7 @@ export default function CreateServiceInvoice() {
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
 
   const [invoice, setInvoice] = useState({
+    invoiceNo: '',
     customerId: '',
     customerName: '',
     items: [{ description: '', amount: '' }],
@@ -121,7 +122,14 @@ export default function CreateServiceInvoice() {
         <div className="invoice-grid">
           <Card className="invoice-card" title="Customer Details">
             <div className="form-grid">
-              <div className="customer-selection-field" style={{ position: 'relative', gridColumn: 'span 2' }}>
+              <Input
+                label="Invoice Number *"
+                placeholder="e.g. SV-0001"
+                value={invoice.invoiceNo}
+                onChange={(e) => setInvoice(prev => ({ ...prev, invoiceNo: e.target.value }))}
+                required
+              />
+              <div className="customer-selection-field" style={{ position: 'relative' }}>
                 <CustomerSearchInput
                   label="Customer Name *"
                   value={invoice.customerName}
