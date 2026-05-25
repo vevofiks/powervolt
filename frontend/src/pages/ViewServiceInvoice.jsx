@@ -68,81 +68,80 @@ export default function ViewServiceInvoice() {
 
       <div className="service-invoice-preview-container">
         <div className="service-invoice-print-area" ref={printRef}>
-          <div className="si-header text-center font-bold underline text-xl mb-6">
-            INVOICE
-          </div>
-
-          <div className="si-top-info flex justify-between mb-8 text-sm">
-            <div className="si-bill-to w-1/2 font-bold uppercase">
-              <div className="mb-2">BILL TO :</div>
-              <div className="ml-4 whitespace-pre-wrap">{invoice.customerName}</div>
-            </div>
-            <div className="si-meta w-1/2 text-right font-bold uppercase text-xs">
-              <div>Invoice Date : {formatDate(invoice.date)}</div>
-              <div>INVOICE NO : {invoice.invoiceNo}</div>
+          <div className="si-header-container">
+            <div className="si-header-title">SERVICE INVOICE</div>
+            <div className="si-header-meta">
+              <div><strong>Invoice No:</strong> {invoice.invoiceNo}</div>
+              <div><strong>Date:</strong> {formatDate(invoice.date)}</div>
             </div>
           </div>
 
-          <table className="si-table w-full border-collapse border border-black text-sm mb-0">
-            <thead>
-              <tr className="border-b border-black">
-                <th className="border-r border-black p-2 w-16 text-center uppercase">NO</th>
-                <th className="border-r border-black p-2 text-center uppercase">DESCRIPTION</th>
-                <th className="p-2 w-32 text-center uppercase">AMOUNT</th>
-              </tr>
-            </thead>
-            <tbody>
-              {invoice.items.map((item, idx) => (
-                <tr key={idx}>
-                  <td className="border-r border-black p-4 text-center align-top font-bold">{idx + 1}</td>
-                  <td className="border-r border-black p-4 align-top font-bold">{item.description}</td>
-                  <td className="p-4 align-top text-center font-bold">{item.amount.toFixed(2)}</td>
+          <div className="si-bill-to-section">
+            <div className="si-section-title">BILL TO</div>
+            <div className="si-customer-name">{invoice.customerName}</div>
+          </div>
+
+          <div className="si-table-container">
+            <table className="si-modern-table">
+              <thead>
+                <tr>
+                  <th className="text-center w-12">#</th>
+                  <th className="text-left">Description of Service</th>
+                  <th className="text-right w-32">Amount</th>
                 </tr>
-              ))}
-              {/* Clean professional spacer instead of huge filler row */}
-              <tr className="h-32">
-                <td className="border-r border-black"></td>
-                <td className="border-r border-black"></td>
-                <td></td>
-              </tr>
-              <tr className="border-t border-black">
-                <td className="border-r border-black"></td>
-                <td className="border-r border-black p-2 text-right font-bold uppercase">TOTAL</td>
-                <td className="p-2 text-center font-bold">{invoice.totalAmount.toFixed(2)}</td>
-              </tr>
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {invoice.items.map((item, idx) => (
+                  <tr key={idx}>
+                    <td className="text-center">{idx + 1}</td>
+                    <td className="text-left">{item.description}</td>
+                    <td className="text-right font-medium">₹ {item.amount.toFixed(2)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            
+            <div className="si-totals-container">
+              <div className="si-total-row">
+                <span className="si-total-label">Total Amount</span>
+                <span className="si-total-value">₹ {invoice.totalAmount.toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
 
-          {/* Bank Details Table aligned perfectly with the main table */}
-          <table className="si-table w-full border-collapse border border-black text-sm mt-8 font-bold uppercase">
-            <tbody>
-              <tr className="border-b border-black">
-                <td className="border-r border-black p-2 text-center w-1/2">PAN CARD NUMBER</td>
-                <td className="p-2 text-center w-1/2"></td>
-              </tr>
-              <tr className="border-b border-black">
-                <td className="border-r border-black p-2 text-center">BANK</td>
-                <td className="p-2 text-center">{invoice.account?.bankName || 'CANARA BANK'}</td>
-              </tr>
-              <tr className="border-b border-black">
-                <td className="border-r border-black p-2 text-center">BRANCH</td>
-                <td className="p-2 text-center">{invoice.account?.branch || ''}</td>
-              </tr>
-              <tr className="border-b border-black">
-                <td className="border-r border-black p-2 text-center">AC NUMBER</td>
-                <td className="p-2 text-center">{invoice.account?.accountNumber || ''}</td>
-              </tr>
-              <tr className="border-b border-black">
-                <td className="border-r border-black p-2 text-center">IFSC CODE</td>
-                <td className="p-2 text-center">{invoice.account?.ifscCode || ''}</td>
-              </tr>
-              <tr>
-                <td className="border-r border-black p-2 text-center">NAME</td>
-                <td className="p-2 text-center">{invoice.account?.accountName || ''}</td>
-              </tr>
-            </tbody>
-          </table>
+          <div className="si-bank-section">
+            <div className="si-section-title">PAYMENT INFORMATION</div>
+            <div className="si-bank-grid">
+              <div className="si-bank-item">
+                <span>Bank</span>
+                <strong>{invoice.account?.bankName || 'CANARA BANK'}</strong>
+              </div>
+              <div className="si-bank-item">
+                <span>Account Name</span>
+                <strong>{invoice.account?.accountName || '—'}</strong>
+              </div>
+              <div className="si-bank-item">
+                <span>A/C Number</span>
+                <strong>{invoice.account?.accountNumber || '—'}</strong>
+              </div>
+              <div className="si-bank-item">
+                <span>IFSC Code</span>
+                <strong>{invoice.account?.ifscCode || '—'}</strong>
+              </div>
+              <div className="si-bank-item">
+                <span>Branch</span>
+                <strong>{invoice.account?.branch || '—'}</strong>
+              </div>
+              <div className="si-bank-item">
+                <span>PAN Card</span>
+                <strong>{/* Add PAN here if available in context, else keep empty */}—</strong>
+              </div>
+            </div>
+          </div>
 
+          <div className="si-footer">
+            <p>Thank you for your business!</p>
+          </div>
         </div>
       </div>
     </div>

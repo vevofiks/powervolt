@@ -1,29 +1,184 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap');
+
 /* Service Invoice specific print styles */
 .service-invoice-preview-container {
   background: white;
   padding: 40px;
-  border-radius: 8px;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  border-radius: 12px;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
   margin-bottom: 40px;
   max-width: 800px;
   margin-left: auto;
   margin-right: auto;
-  color: black !important;
-  font-family: 'Times New Roman', Times, serif; /* Gives it that classic rigid invoice look */
+  color: #1e293b !important;
+  font-family: 'DM Sans', sans-serif;
+  line-height: 1.5;
 }
 
 .service-invoice-print-area {
   padding: 20px;
 }
 
-.si-table th, .si-table td {
-  border-color: black !important;
+.si-header-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 40px;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 20px;
+}
+
+.si-header-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: #0f172a;
+  letter-spacing: -0.5px;
+}
+
+.si-header-meta {
+  text-align: right;
+  font-size: 14px;
+  color: #64748b;
+}
+
+.si-header-meta strong {
+  color: #334155;
+  font-weight: 600;
+  margin-right: 8px;
+}
+
+.si-bill-to-section {
+  margin-bottom: 40px;
+}
+
+.si-section-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+}
+
+.si-customer-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1e293b;
+  white-space: pre-wrap;
+}
+
+.si-table-container {
+  margin-bottom: 40px;
+}
+
+.si-modern-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+}
+
+.si-modern-table th {
+  background-color: #f8fafc;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  padding: 12px 16px;
+  border-bottom: 2px solid #cbd5e1;
+  text-align: left;
+}
+
+.si-modern-table th.text-center {
+  text-align: center;
+}
+
+.si-modern-table th.text-right {
+  text-align: right;
+}
+
+.si-modern-table td {
+  padding: 16px;
+  border-bottom: 1px solid #e2e8f0;
+  color: #334155;
+}
+
+.si-modern-table tr:last-child td {
+  border-bottom: none;
+}
+
+.si-totals-container {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 16px;
+  border-top: 2px solid #cbd5e1;
+}
+
+.si-total-row {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  background-color: #f8fafc;
+  padding: 16px 24px;
+  border-radius: 8px;
+}
+
+.si-total-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #475569;
+  text-transform: uppercase;
+}
+
+.si-total-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.si-bank-section {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 40px;
+}
+
+.si-bank-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px 24px;
+}
+
+.si-bank-item {
+  display: flex;
+  flex-direction: column;
+  font-size: 14px;
+}
+
+.si-bank-item span {
+  color: #64748b;
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.si-bank-item strong {
+  color: #1e293b;
+  font-weight: 600;
+}
+
+.si-footer {
+  text-align: center;
+  color: #94a3b8;
+  font-size: 14px;
+  margin-top: 60px;
+  padding-top: 20px;
+  border-top: 1px solid #e2e8f0;
 }
 
 @media print {
   @page {
     size: A4 portrait;
-    margin: 0; /* Removes browser URL/Date headers and footers */
+    margin: 0;
   }
 
   body * {
@@ -41,7 +196,7 @@
     top: 0;
     width: 100%;
     margin: 0;
-    padding: 20mm 15mm; /* Professional padding away from page edge */
+    padding: 20mm;
   }
 
   .page-wrapper {
@@ -54,5 +209,12 @@
     padding: 0;
     max-width: none;
     margin: 0;
+    border-radius: 0;
+  }
+
+  /* Ensure colors print correctly */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 }
