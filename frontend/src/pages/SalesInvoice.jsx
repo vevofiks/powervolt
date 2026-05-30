@@ -50,6 +50,16 @@ export default function SalesInvoice() {
     }
   };
 
+  const handlePaymentStatusChange = async (id, newStatus) => {
+    try {
+      await salesInvoiceApi.updatePaymentStatus(id, newStatus);
+      toast.success('Payment status updated');
+      setInvoices(prev => prev.map(inv => inv.id === id ? { ...inv, paymentStatus: newStatus } : inv));
+    } catch (err) {
+      toast.error('Failed to update payment status');
+    }
+  };
+
   const handlePrint = (invoice) => {
     setSelectedInvoice(invoice);
     setShowPrintModal(true);
@@ -70,6 +80,17 @@ export default function SalesInvoice() {
       <Badge variant={val === 'GST' ? 'primary' : 'secondary'}>{val}</Badge>
     )},
     { key: 'totalAmount', label: 'Total', align: 'right', render: (val) => formatCurrency(val) },
+    { key: 'paymentStatus', label: 'Payment', render: (val, row) => (
+      <select 
+        value={val || 'PENDING'} 
+        onChange={(e) => handlePaymentStatusChange(row.id, e.target.value)}
+        className={`px-2 py-1 text-sm border rounded ${val === 'PAID' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <option value="PENDING">Pending</option>
+        <option value="PAID">Paid</option>
+      </select>
+    )},
     { key: 'id', label: 'Actions', render: (_, row) => (
       <div className="action-buttons">
         <button className="action-btn" title="View/Print" onClick={() => handlePrint(row)}><HiOutlinePrinter /></button>

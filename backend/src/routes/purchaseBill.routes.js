@@ -12,4 +12,6 @@ router
   .route('/:id')
   .get(purchaseBillController.getBillById);
 
+router.patch('/:id/payment-status', purchaseBillController.updatePaymentStatus);
+
 module.exports = router;

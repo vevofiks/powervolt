@@ -16,4 +16,9 @@ const getById = catchAsync(async (req, res) => {
   res.status(200).json({ success: true, data: invoice });
 });
 
-module.exports = { create, getAll, getById };
+const updatePaymentStatus = catchAsync(async (req, res) => {
+  const invoice = await serviceInvoiceService.updatePaymentStatus(req.params.id, req.body.paymentStatus);
+  res.status(200).json({ success: true, data: invoice });
+});
+
+module.exports = { create, getAll, getById, updatePaymentStatus };

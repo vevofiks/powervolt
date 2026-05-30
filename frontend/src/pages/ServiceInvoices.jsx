@@ -31,11 +31,32 @@ export default function ServiceInvoices() {
     fetchInvoices();
   }, [fetchInvoices]);
 
+  const handlePaymentStatusChange = async (id, newStatus) => {
+    try {
+      await serviceInvoiceApi.updatePaymentStatus(id, newStatus);
+      toast.success('Payment status updated');
+      setInvoices(prev => prev.map(inv => inv.id === id ? { ...inv, paymentStatus: newStatus } : inv));
+    } catch (err) {
+      toast.error('Failed to update payment status');
+    }
+  };
+
   const columns = [
     { key: 'invoiceNo', label: 'Invoice No', render: (val) => <span className="font-semibold text-primary">{val}</span> },
     { key: 'date', label: 'Date', render: (val) => formatDate(val) },
     { key: 'customerName', label: 'Customer', render: (val) => val || '—' },
     { key: 'totalAmount', label: 'Total Amount', align: 'right', render: (val) => <span className="font-semibold">{formatCurrency(val)}</span> },
+    { key: 'paymentStatus', label: 'Payment', render: (val, row) => (
+      <select 
+        value={val || 'PENDING'} 
+        onChange={(e) => handlePaymentStatusChange(row.id, e.target.value)}
+        className={`px-2 py-1 text-sm border rounded ${val === 'PAID' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <option value="PENDING">Pending</option>
+        <option value="PAID">Paid</option>
+      </select>
+    )},
     { key: 'id', label: 'Actions', align: 'right', render: (id) => (
       <button className="text-gray-500 hover:text-primary transition-colors p-1" onClick={() => navigate(`/admin/service-invoice/${id}`)} title="View">
         <HiOutlineEye size={18} />

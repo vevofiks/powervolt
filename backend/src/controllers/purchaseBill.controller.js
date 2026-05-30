@@ -26,8 +26,17 @@ const getBillById = catchAsync(async (req, res) => {
   });
 });
 
+const updatePaymentStatus = catchAsync(async (req, res) => {
+  const bill = await purchaseBillService.updatePaymentStatus(req.params.id, req.body.paymentStatus);
+  res.status(200).json({
+    success: true,
+    data: bill,
+  });
+});
+
 module.exports = {
   createBill,
   getAllBills,
   getBillById,
+  updatePaymentStatus,
 };

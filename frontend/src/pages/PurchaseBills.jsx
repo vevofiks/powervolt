@@ -34,6 +34,16 @@ export default function PurchaseBills() {
     fetchBills();
   }, [fetchBills]);
 
+  const handlePaymentStatusChange = async (id, newStatus) => {
+    try {
+      await purchaseBillApi.updatePaymentStatus(id, newStatus);
+      toast.success('Payment status updated');
+      setBills(prev => prev.map(bill => bill.id === id ? { ...bill, paymentStatus: newStatus } : bill));
+    } catch (err) {
+      toast.error('Failed to update payment status');
+    }
+  };
+
   const columns = [
     { key: 'billNo', label: 'Bill No', render: (val) => <span className="font-semibold text-primary">{val}</span> },
     { key: 'date', label: 'Date', render: (val) => formatDate(val) },
@@ -43,6 +53,17 @@ export default function PurchaseBills() {
     )},
     { key: 'totalAmount', label: 'Total Amount', align: 'right', render: (val) => (
       <span className="font-semibold">{formatCurrency(val)}</span>
+    )},
+    { key: 'paymentStatus', label: 'Payment', render: (val, row) => (
+      <select 
+        value={val || 'PENDING'} 
+        onChange={(e) => handlePaymentStatusChange(row.id, e.target.value)}
+        className={`px-2 py-1 text-sm border rounded ${val === 'PAID' ? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200'}`}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <option value="PENDING">Pending</option>
+        <option value="PAID">Paid</option>
+      </select>
     )},
     { key: 'id', label: 'Actions', align: 'right', render: (id) => (
       <button 

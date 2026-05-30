@@ -82,7 +82,8 @@ const create = async (data) => {
     discount,
     accountId,
     notes,
-    date
+    date,
+    paymentStatus
   } = data;
 
   if (!items || items.length === 0) throw ApiError.badRequest('Invoice must have at least one item');
@@ -120,8 +121,8 @@ const create = async (data) => {
     if (!product) throw ApiError.notFound(`Product not found: ${item.productId}`);
 
     const itemAmount = item.qty * item.rate;
-    // Fixed GST: 9% CGST + 9% SGST = 18% total
-    const itemTax = invoiceType === 'GST' ? (itemAmount * 0.18) : 0;
+    // Fixed GST: 9% CGST + 9% SGST = 18% total (always GST now)
+    const itemTax = itemAmount * 0.18;
     const itemProfit = (item.rate - product.purchasePrice) * item.qty;
 
     subtotal += itemAmount;
@@ -151,16 +152,20 @@ const create = async (data) => {
 
   const totalAmount = subtotal + taxAmount - (parseFloat(discount) || 0);
 
-  // 4. Record Ledger Transaction (Credit account for sale)
-  await ledgerService.recordTransaction({
-    accountId,
-    date: date || new Date(),
-    referenceNo: invoiceNo,
-    moduleType: 'SALES_INVOICE',
-    description: `Sales Invoice ${invoiceNo} for ${customerName || 'Walk-in Customer'}`,
-    credit: totalAmount,
-    linkedId: null
-  });
+  const finalPaymentStatus = paymentStatus || 'PENDING';
+
+  // 4. Record Ledger Transaction (Credit account for sale) ONLY if PAID
+  if (finalPaymentStatus === 'PAID') {
+    await ledgerService.recordTransaction({
+      accountId,
+      date: date || new Date(),
+      referenceNo: invoiceNo,
+      moduleType: 'SALES_INVOICE',
+      description: `Sales Invoice ${invoiceNo} for ${customerName || 'Walk-in Customer'}`,
+      credit: totalAmount,
+      linkedId: null
+    });
+  }
 
   // 5. Create/Update Customer Profile
   let finalCustomerId = customerId;
@@ -210,6 +215,7 @@ const create = async (data) => {
       profit: totalProfit,
       accountId,
       notes,
+      paymentStatus: finalPaymentStatus,
       items: { create: invoiceItems }
     },
     include: { items: true }
@@ -256,4 +262,40 @@ const remove = async (id) => {
   return true;
 };
 
-module.exports = { getAll, getById, create, remove };
+const updatePaymentStatus = async (id, status) => {
+  const invoice = await prisma.salesInvoice.findUnique({ where: { id } });
+  if (!invoice) throw ApiError.notFound('Invoice not found');
+  
+  if (invoice.paymentStatus === status) return invoice;
+
+  const updated = await prisma.salesInvoice.update({
+    where: { id },
+    data: { paymentStatus: status }
+  });
+
+  if (status === 'PAID' && invoice.paymentStatus === 'PENDING') {
+    await ledgerService.recordTransaction({
+      accountId: invoice.accountId,
+      date: new Date(),
+      referenceNo: invoice.invoiceNo,
+      moduleType: 'SALES_INVOICE',
+      description: `Sales Invoice ${invoice.invoiceNo} (Marked Paid)`,
+      credit: invoice.totalAmount,
+      linkedId: invoice.id
+    });
+  } else if (status === 'PENDING' && invoice.paymentStatus === 'PAID') {
+    await ledgerService.recordTransaction({
+      accountId: invoice.accountId,
+      date: new Date(),
+      referenceNo: `REV-${invoice.invoiceNo}`,
+      moduleType: 'ADJUSTMENT',
+      description: `Reverted Sales Invoice ${invoice.invoiceNo} (Marked Pending)`,
+      debit: invoice.totalAmount,
+      linkedId: invoice.id
+    });
+  }
+
+  return updated;
+};
+
+module.exports = { getAll, getById, create, remove, updatePaymentStatus };

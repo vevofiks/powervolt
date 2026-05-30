@@ -61,31 +61,32 @@ class PurchaseBillService {
       },
     });
 
-    // 4. Update Paying Account Balance
-    // Decrease the account balance by totalAmount
-    const updatedAccount = await prisma.account.update({
-      where: { id: accountId },
-      data: {
-        currentBalance: {
-          decrement: bill.totalAmount,
+    // 4 & 5. Update Paying Account Balance and Create Ledger Transaction ONLY if PAID
+    const finalPaymentStatus = paymentStatus || 'PAID';
+    if (finalPaymentStatus === 'PAID') {
+      const updatedAccount = await prisma.account.update({
+        where: { id: accountId },
+        data: {
+          currentBalance: {
+            decrement: bill.totalAmount,
+          },
         },
-      },
-    });
+      });
 
-    // 5. Create Ledger Transaction
-    await prisma.ledgerTransaction.create({
-      data: {
-        accountId,
-        date: bill.date,
-        referenceNo: bill.billNo,
-        moduleType: 'PURCHASE_BILL',
-        description: `Purchase Bill ${vendorName ? 'from ' + vendorName : ''}`,
-        credit: 0,
-        debit: bill.totalAmount, // Money out
-        balanceAfter: updatedAccount.currentBalance,
-        linkedId: bill.id,
-      },
-    });
+      await prisma.ledgerTransaction.create({
+        data: {
+          accountId,
+          date: bill.date,
+          referenceNo: bill.billNo,
+          moduleType: 'PURCHASE_BILL',
+          description: `Purchase Bill ${vendorName ? 'from ' + vendorName : ''}`,
+          credit: 0,
+          debit: bill.totalAmount, // Money out
+          balanceAfter: updatedAccount.currentBalance,
+          linkedId: bill.id,
+        },
+      });
+    }
 
     // 6. Update Product Stocks and Stock History sequentially
     for (const item of bill.items) {
@@ -156,6 +157,58 @@ class PurchaseBillService {
       throw new ApiError(404, 'Purchase Bill not found');
     }
     return bill;
+  }
+
+  async updatePaymentStatus(id, status) {
+    const bill = await prisma.purchaseBill.findUnique({ where: { id } });
+    if (!bill) throw new ApiError(404, 'Purchase Bill not found');
+    
+    if (bill.paymentStatus === status) return bill;
+
+    const updatedBill = await prisma.purchaseBill.update({
+      where: { id },
+      data: { paymentStatus: status }
+    });
+
+    if (status === 'PAID' && bill.paymentStatus === 'PENDING') {
+      const updatedAccount = await prisma.account.update({
+        where: { id: bill.accountId },
+        data: { currentBalance: { decrement: bill.totalAmount } },
+      });
+      await prisma.ledgerTransaction.create({
+        data: {
+          accountId: bill.accountId,
+          date: new Date(),
+          referenceNo: bill.billNo,
+          moduleType: 'PURCHASE_BILL',
+          description: `Purchase Bill ${bill.vendorName ? 'from ' + bill.vendorName : ''} (Marked Paid)`,
+          credit: 0,
+          debit: bill.totalAmount,
+          balanceAfter: updatedAccount.currentBalance,
+          linkedId: bill.id,
+        },
+      });
+    } else if (status === 'PENDING' && bill.paymentStatus === 'PAID') {
+      const updatedAccount = await prisma.account.update({
+        where: { id: bill.accountId },
+        data: { currentBalance: { increment: bill.totalAmount } },
+      });
+      await prisma.ledgerTransaction.create({
+        data: {
+          accountId: bill.accountId,
+          date: new Date(),
+          referenceNo: `REV-${bill.billNo}`,
+          moduleType: 'ADJUSTMENT',
+          description: `Purchase Bill ${bill.vendorName ? 'from ' + bill.vendorName : ''} (Marked Pending)`,
+          credit: bill.totalAmount,
+          debit: 0,
+          balanceAfter: updatedAccount.currentBalance,
+          linkedId: bill.id,
+        },
+      });
+    }
+
+    return updatedBill;
   }
 }
 

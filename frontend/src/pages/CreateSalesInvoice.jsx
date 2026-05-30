@@ -28,7 +28,7 @@ export default function CreateSalesInvoice() {
   const [productSubmitting, setProductSubmitting] = useState(false);
 
   const [invoice, setInvoice] = useState({
-    invoiceType: 'NON_GST',
+    invoiceType: 'GST',
     customerId: '',
     customerName: '',
     customerPhone: '',
@@ -208,7 +208,7 @@ export default function CreateSalesInvoice() {
   // Calculations
   const subtotal = invoice.items.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
   // Fixed GST: 9% CGST + 9% SGST = 18% total
-  const taxAmount = invoice.invoiceType === 'GST' ? subtotal * 0.18 : 0;
+  const taxAmount = subtotal * 0.18;
   const totalAmount = subtotal + taxAmount - (parseFloat(invoice.discount) || 0);
 
   const handleSubmit = async (e) => {
@@ -293,15 +293,6 @@ export default function CreateSalesInvoice() {
             </div>
 
             <div style={{ marginTop: '24px', display: 'flex', gap: '16px' }}>
-              <Select
-                label="Invoice Type"
-                value={invoice.invoiceType}
-                onChange={(e) => setInvoice(prev => ({ ...prev, invoiceType: e.target.value }))}
-                options={[
-                  { value: 'GST', label: 'GST Invoice' },
-                  { value: 'NON_GST', label: 'Non-GST Invoice' }
-                ]}
-              />
               <Input
                 label="Invoice Date"
                 type="date"
@@ -405,22 +396,18 @@ export default function CreateSalesInvoice() {
                     <span>Subtotal:</span>
                     <span>₹{subtotal.toFixed(2)}</span>
                   </div>
-                  {invoice.invoiceType === 'GST' && (
-                    <>
-                      <div className="summary-row">
-                        <span>CGST @ 9%:</span>
-                        <span>₹{(taxAmount / 2).toFixed(2)}</span>
-                      </div>
-                      <div className="summary-row">
-                        <span>SGST @ 9%:</span>
-                        <span>₹{(taxAmount / 2).toFixed(2)}</span>
-                      </div>
-                      <div className="summary-row">
-                        <span>Total GST:</span>
-                        <span>₹{taxAmount.toFixed(2)}</span>
-                      </div>
-                    </>
-                  )}
+                  <div className="summary-row">
+                    <span>CGST @ 9%:</span>
+                    <span>₹{(taxAmount / 2).toFixed(2)}</span>
+                  </div>
+                  <div className="summary-row">
+                    <span>SGST @ 9%:</span>
+                    <span>₹{(taxAmount / 2).toFixed(2)}</span>
+                  </div>
+                  <div className="summary-row">
+                    <span>Total GST:</span>
+                    <span>₹{taxAmount.toFixed(2)}</span>
+                  </div>
                   <div className="summary-row">
                     <span>Discount:</span>
                     <input

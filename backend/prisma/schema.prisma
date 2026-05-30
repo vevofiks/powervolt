@@ -104,6 +104,8 @@ model SalesInvoice {
   accountId String
   account   Account @relation(fields: [accountId], references: [id])
 
+  paymentStatus String @default("PENDING") // PENDING, PARTIALLY_PAID, PAID
+
   items SalesInvoiceItem[]
 
   notes     String?
@@ -174,7 +176,7 @@ model PurchaseBill {
   accountId String
   account   Account @relation(fields: [accountId], references: [id])
 
-  paymentStatus String             @default("PAID") // PAID, PENDING
+  paymentStatus String             @default("PENDING") // PENDING, PARTIALLY_PAID, PAID
   items         PurchaseBillItem[]
 
   notes     String?
@@ -224,6 +226,8 @@ model ServiceInvoice {
 
   accountId String
   account   Account @relation(fields: [accountId], references: [id])
+
+  paymentStatus String @default("PENDING") // PENDING, PARTIALLY_PAID, PAID
 
   items ServiceInvoiceItem[]
 

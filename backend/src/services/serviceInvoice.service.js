@@ -4,7 +4,7 @@ const ApiError = require('../utils/ApiError');
 
 class ServiceInvoiceService {
   async create(data) {
-    const { customerId, customerName, accountId, items, invoiceNo, date, totalAmount, notes } = data;
+    const { customerId, customerName, accountId, items, invoiceNo, date, totalAmount, notes, paymentStatus } = data;
 
     // Validate Account
     const account = await prisma.account.findUnique({ where: { id: accountId } });
@@ -26,6 +26,7 @@ class ServiceInvoiceService {
         accountId,
         totalAmount: parseFloat(totalAmount) || 0,
         notes,
+        paymentStatus: paymentStatus || 'PENDING',
         items: {
           create: items.map(i => ({
             description: i.description,
@@ -36,24 +37,26 @@ class ServiceInvoiceService {
       include: { items: true }
     });
 
-    const updatedAccount = await prisma.account.update({
-      where: { id: accountId },
-      data: { currentBalance: { increment: invoice.totalAmount } }
-    });
+    if ((paymentStatus || 'PENDING') === 'PAID') {
+      const updatedAccount = await prisma.account.update({
+        where: { id: accountId },
+        data: { currentBalance: { increment: invoice.totalAmount } }
+      });
 
-    await prisma.ledgerTransaction.create({
-      data: {
-        accountId,
-        date: invoice.date,
-        referenceNo: invoice.invoiceNo,
-        moduleType: 'SALES_INVOICE',
-        description: `Service Invoice ${customerName ? 'to ' + customerName : ''}`,
-        credit: invoice.totalAmount,
-        debit: 0,
-        balanceAfter: updatedAccount.currentBalance,
-        linkedId: invoice.id,
-      }
-    });
+      await prisma.ledgerTransaction.create({
+        data: {
+          accountId,
+          date: invoice.date,
+          referenceNo: invoice.invoiceNo,
+          moduleType: 'SALES_INVOICE',
+          description: `Service Invoice ${customerName ? 'to ' + customerName : ''}`,
+          credit: invoice.totalAmount,
+          debit: 0,
+          balanceAfter: updatedAccount.currentBalance,
+          linkedId: invoice.id,
+        }
+      });
+    }
 
     return invoice;
   }
@@ -72,6 +75,58 @@ class ServiceInvoiceService {
     });
     if (!invoice) throw new ApiError(404, 'Service Invoice not found');
     return invoice;
+  }
+
+  async updatePaymentStatus(id, status) {
+    const invoice = await prisma.serviceInvoice.findUnique({ where: { id } });
+    if (!invoice) throw new ApiError(404, 'Service Invoice not found');
+    
+    if (invoice.paymentStatus === status) return invoice;
+
+    const updated = await prisma.serviceInvoice.update({
+      where: { id },
+      data: { paymentStatus: status }
+    });
+
+    if (status === 'PAID' && invoice.paymentStatus === 'PENDING') {
+      const updatedAccount = await prisma.account.update({
+        where: { id: invoice.accountId },
+        data: { currentBalance: { increment: invoice.totalAmount } }
+      });
+      await prisma.ledgerTransaction.create({
+        data: {
+          accountId: invoice.accountId,
+          date: new Date(),
+          referenceNo: invoice.invoiceNo,
+          moduleType: 'SALES_INVOICE',
+          description: `Service Invoice ${invoice.customerName ? 'to ' + invoice.customerName : ''} (Marked Paid)`,
+          credit: invoice.totalAmount,
+          debit: 0,
+          balanceAfter: updatedAccount.currentBalance,
+          linkedId: invoice.id,
+        }
+      });
+    } else if (status === 'PENDING' && invoice.paymentStatus === 'PAID') {
+      const updatedAccount = await prisma.account.update({
+        where: { id: invoice.accountId },
+        data: { currentBalance: { decrement: invoice.totalAmount } }
+      });
+      await prisma.ledgerTransaction.create({
+        data: {
+          accountId: invoice.accountId,
+          date: new Date(),
+          referenceNo: `REV-${invoice.invoiceNo}`,
+          moduleType: 'ADJUSTMENT',
+          description: `Service Invoice ${invoice.customerName ? 'to ' + invoice.customerName : ''} (Marked Pending)`,
+          credit: 0,
+          debit: invoice.totalAmount,
+          balanceAfter: updatedAccount.currentBalance,
+          linkedId: invoice.id,
+        }
+      });
+    }
+
+    return updated;
   }
 }
 
