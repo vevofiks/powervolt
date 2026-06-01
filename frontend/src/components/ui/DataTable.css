@@ -54,3 +54,23 @@
   font-size: var(--font-sm);
   gap: var(--spacing-sm);
 }
+
+/* ─── Row Number Column ──────────────────────────────────────── */
+.data-table__num-col {
+  width: 44px;
+  min-width: 44px;
+  text-align: center !important;
+  color: var(--color-text-muted);
+  font-size: var(--font-xs);
+  border-right: 1px solid var(--color-border-light);
+  background: var(--color-bg);
+  font-weight: 600;
+  padding-left: var(--spacing-sm) !important;
+  padding-right: var(--spacing-sm) !important;
+}
+
+thead .data-table__num-col {
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+

@@ -104,7 +104,7 @@ const create = async (data) => {
     orderBy: { invoiceNo: 'desc' }
   });
 
-  let nextSeq = 1;
+  let nextSeq = 14;
   if (lastInvoice) {
     const lastSeq = parseInt(lastInvoice.invoiceNo.split('-').pop(), 10);
     if (!isNaN(lastSeq)) nextSeq = lastSeq + 1;
