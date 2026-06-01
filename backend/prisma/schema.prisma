@@ -104,7 +104,8 @@ model SalesInvoice {
   accountId String
   account   Account @relation(fields: [accountId], references: [id])
 
-  paymentStatus String @default("PENDING") // PENDING, PARTIALLY_PAID, PAID
+  paymentStatus    String @default("PENDING")  // PENDING, PARTIALLY_PAID, PAID
+  invoiceCategory  String @default("PRODUCT")  // PRODUCT, SERVICE
 
   items SalesInvoiceItem[]
 
@@ -115,6 +116,7 @@ model SalesInvoice {
   @@index([invoiceNo])
   @@index([date])
   @@index([customerId])
+  @@index([invoiceCategory])
 }
 
 model SalesInvoiceItem {
@@ -122,8 +124,8 @@ model SalesInvoiceItem {
   invoiceId String
   invoice   SalesInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 
-  productId   String
-  product     Product @relation(fields: [productId], references: [id])
+  productId   String?
+  product     Product? @relation(fields: [productId], references: [id])
   productName String // Snapshot
   hsnCode     String? // Snapshot
 
@@ -132,6 +134,7 @@ model SalesInvoiceItem {
   purchasePrice Float // Snapshot for profit calculation
   gstPercent    Float @default(0)
   amount        Float
+  itemType      String @default("PRODUCT") // PRODUCT or SERVICE
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

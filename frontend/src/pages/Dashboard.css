@@ -162,7 +162,19 @@
   color: var(--color-text-muted);
 }
 
+.mini-category-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
 .text-red { color: #dc2626; }
+
 .font-bold { font-weight: 700; }
 
 @media (max-width: 640px) {
@@ -170,3 +182,75 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ─── Category Stats Cards ───────────────────────────────────── */
+.dashboard__category-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
+}
+
+.dashboard__category-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 20px;
+  border: 2px solid transparent;
+  transition: transform 0.2s;
+}
+
+.dashboard__category-card:hover {
+  transform: translateY(-3px);
+}
+
+.dashboard__category-card--product {
+  border-color: #bbf7d0;
+  background: linear-gradient(135deg, #f0fdf4, var(--color-surface));
+}
+
+.dashboard__category-card--service {
+  border-color: #bfdbfe;
+  background: linear-gradient(135deg, #eff6ff, var(--color-surface));
+}
+
+.dashboard__category-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.dashboard__category-emoji {
+  font-size: 28px;
+}
+
+.dashboard__category-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 2px;
+}
+
+.dashboard__category-count {
+  display: block;
+  font-size: 11px;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.dashboard__category-revenue {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--color-text);
+}
+
+.dashboard__category-card--product .dashboard__category-revenue {
+  color: #15803d;
+}
+
+.dashboard__category-card--service .dashboard__category-revenue {
+  color: #1d4ed8;
+}
+

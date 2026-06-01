@@ -11,11 +11,24 @@ const getProfitLoss = async (startDate, endDate) => {
     if (endDate) where.date.lte = new Date(endDate);
   }
 
-  const [sales, purchases, expenses, salaries] = await Promise.all([
+  const [sales, productSales, serviceSales, purchases, expenses, salaries] = await Promise.all([
     // Total Revenue & Total Direct Profit
     prisma.salesInvoice.aggregate({
       where,
-      _sum: { totalAmount: true, profit: true }
+      _sum: { totalAmount: true, profit: true },
+      _count: { id: true }
+    }),
+    // Product invoice stats
+    prisma.salesInvoice.aggregate({
+      where: { ...where, invoiceCategory: 'PRODUCT' },
+      _sum: { totalAmount: true },
+      _count: { id: true }
+    }),
+    // Service invoice stats
+    prisma.salesInvoice.aggregate({
+      where: { ...where, invoiceCategory: 'SERVICE' },
+      _sum: { totalAmount: true },
+      _count: { id: true }
     }),
     // Total Purchases (Expense for inventory)
     prisma.purchaseInvoice.aggregate({
@@ -46,6 +59,17 @@ const getProfitLoss = async (startDate, endDate) => {
     purchaseCost,
     operationalExpenses,
     netProfit,
+    totalInvoiceCount: sales._count.id || 0,
+    categoryStats: {
+      product: {
+        count: productSales._count.id || 0,
+        revenue: productSales._sum.totalAmount || 0
+      },
+      service: {
+        count: serviceSales._count.id || 0,
+        revenue: serviceSales._sum.totalAmount || 0
+      }
+    },
     expenseBreakdown: {
       materials: expenses._sum.amount || 0, // Simplified for now
       salaries: salaries._sum.amount || 0

@@ -27,6 +27,7 @@ const getAll = async (query = {}) => {
   }
 
   if (query.invoiceType) where.invoiceType = query.invoiceType;
+  if (query.invoiceCategory) where.invoiceCategory = query.invoiceCategory;
   if (query.startDate || query.endDate) {
     where.date = {};
     if (query.startDate) where.date.gte = new Date(query.startDate);
@@ -69,6 +70,7 @@ const getById = async (id) => {
 const create = async (data) => {
   const {
     invoiceType,
+    invoiceCategory,
     customerId,
     customerName,
     customerPhone,
@@ -117,37 +119,50 @@ const create = async (data) => {
   const invoiceItems = [];
 
   for (const item of items) {
-    const product = await prisma.product.findUnique({ where: { id: item.productId } });
-    if (!product) throw ApiError.notFound(`Product not found: ${item.productId}`);
+    const isService = item.itemType === 'SERVICE';
+    let productName = item.productName;
+    let hsnCode = item.hsnCode || '';
+    let purchasePrice = 0;
+
+    if (!isService) {
+      const product = await prisma.product.findUnique({ where: { id: item.productId } });
+      if (!product) throw ApiError.notFound(`Product not found: ${item.productId}`);
+      productName = product.productName;
+      hsnCode = product.hsnCode;
+      purchasePrice = product.purchasePrice;
+    }
 
     const itemAmount = item.qty * item.rate;
     // Fixed GST: 9% CGST + 9% SGST = 18% total (always GST now)
     const itemTax = itemAmount * 0.18;
-    const itemProfit = (item.rate - product.purchasePrice) * item.qty;
+    const itemProfit = (item.rate - purchasePrice) * item.qty;
 
     subtotal += itemAmount;
     taxAmount += itemTax;
     totalProfit += itemProfit;
 
     invoiceItems.push({
-      productId: item.productId,
-      productName: product.productName,
-      hsnCode: product.hsnCode,
+      productId: isService ? null : item.productId,
+      productName,
+      hsnCode,
       qty: item.qty,
       rate: item.rate,
-      purchasePrice: product.purchasePrice,
-      amount: itemAmount
+      purchasePrice,
+      amount: itemAmount,
+      itemType: isService ? 'SERVICE' : 'PRODUCT'
     });
 
-    // 3. Update Stock — sequential call per item
-    await stockService.recordMovement({
-      productId: item.productId,
-      type: 'SALE_OUT',
-      quantity: item.qty,
-      reference: invoiceNo,
-      remark: `Sale Invoice ${invoiceNo}`,
-      date: date || new Date()
-    });
+    if (!isService) {
+      // 3. Update Stock — sequential call per item
+      await stockService.recordMovement({
+        productId: item.productId,
+        type: 'SALE_OUT',
+        quantity: item.qty,
+        reference: invoiceNo,
+        remark: `Sale Invoice ${invoiceNo}`,
+        date: date || new Date()
+      });
+    }
   }
 
   const totalAmount = subtotal + taxAmount - (parseFloat(discount) || 0);
@@ -199,6 +214,7 @@ const create = async (data) => {
       invoiceNo,
       date: targetDate,
       invoiceType,
+      invoiceCategory: invoiceCategory || 'PRODUCT',
       customerId: finalCustomerId,
       customerName,
       customerPhone,
@@ -236,6 +252,7 @@ const remove = async (id) => {
 
   // 1. Revert Stock for each item sequentially
   for (const item of invoice.items) {
+    if (item.itemType === 'SERVICE' || !item.productId) continue;
     await stockService.recordMovement({
       productId: item.productId,
       type: 'RETURN_IN',

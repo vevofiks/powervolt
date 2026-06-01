@@ -146,3 +146,102 @@
   .main-content { padding: 0 !important; }
   .report-stat-card { border: 1px solid #eee !important; }
 }
+
+/* ─── Category Stats ─────────────────────────────────────────── */
+.category-stats-section {
+  margin-top: 24px;
+  margin-bottom: 4px;
+}
+
+.category-stats-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 14px;
+}
+
+.category-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.category-stat-card {
+  background: var(--color-surface);
+  border-radius: 12px;
+  padding: 20px;
+  border: 2px solid transparent;
+  transition: border-color 0.2s;
+}
+
+.category-stat-card--product {
+  border-color: #bbf7d0;
+  background: linear-gradient(135deg, #f0fdf4 0%, var(--color-surface) 100%);
+}
+
+.category-stat-card--service {
+  border-color: #bfdbfe;
+  background: linear-gradient(135deg, #eff6ff 0%, var(--color-surface) 100%);
+}
+
+.category-stat-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.category-stat-icon {
+  font-size: 22px;
+}
+
+.category-stat-label {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.category-stat-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.category-stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.category-stat-row strong {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--color-text);
+}
+
+.category-stat-bar {
+  height: 6px;
+  background: var(--color-border-light);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.category-stat-bar-fill {
+  height: 100%;
+  border-radius: 10px;
+  transition: width 0.8s ease;
+}
+
+.category-stat-bar-fill--product {
+  background: linear-gradient(90deg, #16a34a, #4ade80);
+}
+
+.category-stat-bar-fill--service {
+  background: linear-gradient(90deg, #2563eb, #60a5fa);
+}
+

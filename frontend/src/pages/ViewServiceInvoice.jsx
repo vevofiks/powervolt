@@ -69,7 +69,7 @@ export default function ViewServiceInvoice() {
       <div className="service-invoice-preview-container">
         <div className="service-invoice-print-area" ref={printRef}>
           <div className="si-header-container">
-            <div className="si-header-title">SERVICE INVOICE</div>
+            <div className="si-header-title">INVOICE</div>
             <div className="si-header-meta">
               <div><strong>Invoice No:</strong> {invoice.invoiceNo}</div>
               <div><strong>Date:</strong> {formatDate(invoice.date)}</div>

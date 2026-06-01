@@ -207,11 +207,22 @@ export default function CreatePurchaseBill() {
   const taxAmount = bill.billType === 'GST' ? subtotal * 0.18 : 0;
   const totalAmount = subtotal + taxAmount;
 
+  // Selected account for balance check
+  const selectedAccount = accounts.find(acc => acc.id === bill.accountId) || null;
+  const hasInsufficientBalance = selectedAccount && bill.paymentStatus === 'PAID' && selectedAccount.currentBalance < totalAmount;
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!bill.billNo) return toast.error('Bill Number is required');
     if (!bill.accountId) return toast.error('Please select a payment account');
     if (bill.items.some(item => !item.productId)) return toast.error('Please select products for all items');
+
+    // Balance check — only block if payment status is PAID
+    if (hasInsufficientBalance) {
+      return toast.error(
+        `Insufficient balance! Account "${selectedAccount.accountName}" has ₹${selectedAccount.currentBalance.toFixed(2)} but the bill total is ₹${totalAmount.toFixed(2)}.`
+      );
+    }
 
     setLoading(true);
     try {
@@ -373,8 +384,32 @@ export default function CreatePurchaseBill() {
                   label="Paying Account *"
                   value={bill.accountId}
                   onChange={(e) => setBill(prev => ({ ...prev, accountId: e.target.value }))}
-                  options={accounts.map(acc => ({ value: acc.id, label: `${acc.accountName} (₹${acc.currentBalance})` }))}
+                  options={accounts.map(acc => ({ value: acc.id, label: `${acc.accountName} (₹${Number(acc.currentBalance).toFixed(2)})` }))}
                 />
+                {/* Balance warning */}
+                {selectedAccount && (
+                  <div style={{
+                    marginTop: '-8px',
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    background: hasInsufficientBalance ? '#fef2f2' : '#f0fdf4',
+                    border: `1px solid ${hasInsufficientBalance ? '#fecaca' : '#bbf7d0'}`,
+                    color: hasInsufficientBalance ? '#dc2626' : '#15803d'
+                  }}>
+                    {hasInsufficientBalance ? '⚠️' : '✅'}
+                    <span>
+                      {hasInsufficientBalance
+                        ? `Insufficient balance — ₹${Number(selectedAccount.currentBalance).toFixed(2)} available, ₹${totalAmount.toFixed(2)} needed`
+                        : `Available balance: ₹${Number(selectedAccount.currentBalance).toFixed(2)}`
+                      }
+                    </span>
+                  </div>
+                )}
                 <div className="summary-details">
                   <div className="summary-row">
                     <span>Subtotal:</span>

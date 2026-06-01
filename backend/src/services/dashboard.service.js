@@ -7,17 +7,32 @@ const getStats = async () => {
   const [
     salesCount,
     salesAmount,
+    productSalesCount,
+    productSalesAmount,
+    serviceSalesCount,
+    serviceSalesAmount,
     expenseAmount,
     stockValue,
-    lowStockCount,
     recentSales,
     recentExpenses,
     accountBalances
   ] = await Promise.all([
-    // Sales this month
+    // All sales this month
     prisma.salesInvoice.count({ where: { date: { gte: startOfMonth } } }),
     prisma.salesInvoice.aggregate({
       where: { date: { gte: startOfMonth } },
+      _sum: { totalAmount: true }
+    }),
+    // Product invoices this month
+    prisma.salesInvoice.count({ where: { date: { gte: startOfMonth }, invoiceCategory: 'PRODUCT' } }),
+    prisma.salesInvoice.aggregate({
+      where: { date: { gte: startOfMonth }, invoiceCategory: 'PRODUCT' },
+      _sum: { totalAmount: true }
+    }),
+    // Service invoices this month
+    prisma.salesInvoice.count({ where: { date: { gte: startOfMonth }, invoiceCategory: 'SERVICE' } }),
+    prisma.salesInvoice.aggregate({
+      where: { date: { gte: startOfMonth }, invoiceCategory: 'SERVICE' },
       _sum: { totalAmount: true }
     }),
     // Expenses this month
@@ -29,15 +44,11 @@ const getStats = async () => {
     prisma.product.findMany({
       select: { currentStock: true, purchasePrice: true }
     }),
-    // Low Stock Count
-    prisma.product.count({
-      where: { currentStock: { lte: prisma.product.lowStockThreshold } }
-    }),
-    // Recent Sales
+    // Recent Sales (include category)
     prisma.salesInvoice.findMany({
       take: 5,
       orderBy: { date: 'desc' },
-      select: { invoiceNo: true, customerName: true, totalAmount: true, date: true }
+      select: { invoiceNo: true, customerName: true, totalAmount: true, date: true, invoiceCategory: true }
     }),
     // Recent Expenses
     prisma.expense.findMany({
@@ -59,8 +70,11 @@ const getStats = async () => {
       monthlySales: salesAmount._sum.totalAmount || 0,
       monthlyExpenses: expenseAmount._sum.amount || 0,
       totalStockValue,
-      lowStockCount,
-      salesCount
+      salesCount,
+      productSalesCount,
+      productSalesRevenue: productSalesAmount._sum.totalAmount || 0,
+      serviceSalesCount,
+      serviceSalesRevenue: serviceSalesAmount._sum.totalAmount || 0,
     },
     recentSales,
     recentExpenses,

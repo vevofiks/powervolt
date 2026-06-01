@@ -29,6 +29,7 @@ export default function CreateSalesInvoice() {
 
   const [invoice, setInvoice] = useState({
     invoiceType: 'GST',
+    invoiceCategory: 'PRODUCT',
     customerId: '',
     customerName: '',
     customerPhone: '',
@@ -38,7 +39,7 @@ export default function CreateSalesInvoice() {
     customerCity: '',
     customerState: '',
     customerPincode: '',
-    items: [{ productId: '', productName: '', sku: '', hsnCode: '', qty: 1, rate: 0, amount: 0 }],
+    items: [{ itemType: 'PRODUCT', productId: '', productName: '', sku: '', hsnCode: '', qty: 1, rate: 0, amount: 0 }],
     discount: 0,
     accountId: '',
     notes: '',
@@ -184,9 +185,10 @@ export default function CreateSalesInvoice() {
   };
 
   const addItem = () => {
+    const itemType = invoice.invoiceCategory || 'PRODUCT';
     setInvoice(prev => ({
       ...prev,
-      items: [...prev.items, { productId: '', productName: '', sku: '', hsnCode: '', qty: 1, rate: 0, amount: 0 }]
+      items: [...prev.items, { itemType, productId: '', productName: '', sku: '', hsnCode: '', qty: 1, rate: 0, amount: 0 }]
     }));
   };
 
@@ -215,7 +217,15 @@ export default function CreateSalesInvoice() {
     e.preventDefault();
     if (!invoice.customerName) return toast.error('Customer Name is required');
     if (!invoice.accountId) return toast.error('Please select a payment account');
-    if (invoice.items.some(item => !item.productId)) return toast.error('Please select products for all items');
+    
+    // Validate items based on invoice category
+    const isService = invoice.invoiceCategory === 'SERVICE';
+    if (!isService && invoice.items.some(item => !item.productId)) {
+      return toast.error('Please select products for all items');
+    }
+    if (isService && invoice.items.some(item => !item.productName.trim())) {
+      return toast.error('Please enter descriptions for all service items');
+    }
 
     setLoading(true);
     try {
@@ -292,7 +302,7 @@ export default function CreateSalesInvoice() {
               />
             </div>
 
-            <div style={{ marginTop: '24px', display: 'flex', gap: '16px' }}>
+            <div style={{ marginTop: '24px', display: 'flex', gap: '16px', alignItems: 'flex-end' }}>
               <Input
                 label="Invoice Date"
                 type="date"
@@ -300,56 +310,130 @@ export default function CreateSalesInvoice() {
                 max={new Date().toISOString().split('T')[0]}
                 onChange={(e) => setInvoice(prev => ({ ...prev, date: e.target.value }))}
               />
+              <div style={{ flex: 1 }}>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  Invoice Category *
+                </label>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setInvoice(prev => ({
+                      ...prev,
+                      invoiceCategory: 'PRODUCT',
+                      items: prev.items.map(item => ({ ...item, itemType: 'PRODUCT', productId: '', productName: '', sku: '', hsnCode: '' }))
+                    }))}
+                    style={{
+                      flex: 1, padding: '9px 12px', borderRadius: '8px', fontWeight: 600, fontSize: '13px',
+                      cursor: 'pointer', transition: 'all 0.2s', border: '2px solid',
+                      borderColor: invoice.invoiceCategory === 'PRODUCT' ? '#16a34a' : 'var(--color-border)',
+                      background: invoice.invoiceCategory === 'PRODUCT' ? '#dcfce7' : 'var(--color-background)',
+                      color: invoice.invoiceCategory === 'PRODUCT' ? '#15803d' : 'var(--color-text-secondary)'
+                    }}
+                  >
+                    🏭 PRODUCT
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setInvoice(prev => ({
+                      ...prev,
+                      invoiceCategory: 'SERVICE',
+                      items: prev.items.map(item => ({ ...item, itemType: 'SERVICE', productId: '', productName: '', sku: '', hsnCode: '' }))
+                    }))}
+                    style={{
+                      flex: 1, padding: '9px 12px', borderRadius: '8px', fontWeight: 600, fontSize: '13px',
+                      cursor: 'pointer', transition: 'all 0.2s', border: '2px solid',
+                      borderColor: invoice.invoiceCategory === 'SERVICE' ? '#2563eb' : 'var(--color-border)',
+                      background: invoice.invoiceCategory === 'SERVICE' ? '#dbeafe' : 'var(--color-background)',
+                      color: invoice.invoiceCategory === 'SERVICE' ? '#1d4ed8' : 'var(--color-text-secondary)'
+                    }}
+                  >
+                    🔧 SERVICE
+                  </button>
+                </div>
+              </div>
             </div>
           </Card>
 
-          {/* Items Section */}
-          <Card className="invoice-card items-card" title="Items">
+          <Card
+            className="invoice-card items-card"
+          >
+            <div className="items-card-header">
+              <span className="items-card-title">Items</span>
+              <span
+                className="items-mode-badge"
+                style={{
+                  background: invoice.invoiceCategory === 'SERVICE' ? '#dbeafe' : '#dcfce7',
+                  color: invoice.invoiceCategory === 'SERVICE' ? '#1d4ed8' : '#15803d',
+                  border: `1px solid ${invoice.invoiceCategory === 'SERVICE' ? '#bfdbfe' : '#bbf7d0'}`
+                }}
+              >
+                {invoice.invoiceCategory === 'SERVICE' ? '🔧 Service Mode' : '🏭 Product Mode'}
+              </span>
+            </div>
             <table className="items-table">
               <thead>
                 <tr>
-                  <th>Product Name</th>
-                  <th width="100">SKU</th>
-                  <th width="100">HSN</th>
+                  <th style={{ width: '32px' }}>#</th>
+                  <th>{invoice.invoiceCategory === 'SERVICE' ? 'Service Description' : 'Product Name'}</th>
+                  {invoice.invoiceCategory !== 'SERVICE' && <th width="90">SKU</th>}
+                  {invoice.invoiceCategory !== 'SERVICE' && <th width="110">HSN Code</th>}
                   <th width="80">Qty</th>
                   <th width="130">Rate (₹)</th>
                   <th width="130">Amount (₹)</th>
-                  <th width="80"></th>
+                  <th width="48"></th>
                 </tr>
               </thead>
               <tbody>
                 {invoice.items.map((item, index) => (
                   <tr key={index}>
+                    <td style={{ textAlign: 'center', color: 'var(--color-text-muted)', fontWeight: 600 }}>{index + 1}</td>
                     <td className="product-cell">
-                      <ProductSearchInput
-                        value={item.productName}
-                        onChange={(val) => handleProductInputChange(index, val)}
-                        onSelect={(product) => selectProduct(index, product)}
-                        onQuickAdd={() => openProductModal(index)}
-                        hasError={!item.productId && item.productName}
-                      />
-                      {!item.productId && item.productName && (
-                        <div className="input-hint text-danger" style={{ fontSize: '11px', marginTop: '4px' }}>Select from dropdown or add new</div>
+                      {invoice.invoiceCategory === 'SERVICE' ? (
+                        <input
+                          type="text"
+                          className="item-input"
+                          placeholder="e.g., Installation fee, Repair service..."
+                          value={item.productName || ''}
+                          onChange={(e) => updateItem(index, 'productName', e.target.value)}
+                          required
+                        />
+                      ) : (
+                        <>
+                          <ProductSearchInput
+                            value={item.productName}
+                            onChange={(val) => handleProductInputChange(index, val)}
+                            onSelect={(product) => selectProduct(index, product)}
+                            onQuickAdd={() => openProductModal(index)}
+                            hasError={!item.productId && item.productName}
+                          />
+                          {!item.productId && item.productName && (
+                            <div className="input-hint text-danger" style={{ fontSize: '11px', marginTop: '4px' }}>Select from dropdown or add new</div>
+                          )}
+                        </>
                       )}
                     </td>
-                    <td>
-                      <input
-                        type="text"
-                        className="item-input sku-input"
-                        value={item.sku || ''}
-                        placeholder="—"
-                        readOnly
-                      />
-                    </td>
-                    <td>
-                      <input
-                        type="text"
-                        className="item-input hsn-input"
-                        value={item.hsnCode || ''}
-                        placeholder="—"
-                        readOnly
-                      />
-                    </td>
+                    {invoice.invoiceCategory !== 'SERVICE' && (
+                      <td>
+                        <input
+                          type="text"
+                          className="item-input sku-input"
+                          value={item.sku || ''}
+                          placeholder="—"
+                          readOnly
+                        />
+                      </td>
+                    )}
+                    {invoice.invoiceCategory !== 'SERVICE' && (
+                      <td>
+                        <input
+                          type="text"
+                          className="item-input hsn-input"
+                          value={item.hsnCode || ''}
+                          placeholder="—"
+                          readOnly
+                        />
+                      </td>
+                    )}
                     <td>
                       <input
                         type="number"

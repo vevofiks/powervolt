@@ -5,27 +5,35 @@ import PageHeader from '../components/ui/PageHeader';
 import Card from '../components/ui/Card';
 import DataTable from '../components/ui/DataTable';
 import Button from '../components/ui/Button';
-import Badge from '../components/ui/Badge';
 import Modal from '../components/ui/Modal';
 import { salesInvoiceApi } from '../api/salesInvoices';
 import { formatCurrency } from '../utils/formatCurrency';
 import { formatDate } from '../utils/formatDate';
-import { HiOutlinePlus, HiOutlinePrinter, HiOutlineTrash, HiOutlineEye, HiOutlineSearch, HiOutlineChat } from 'react-icons/hi';
+import { HiOutlinePlus, HiOutlinePrinter, HiOutlineTrash, HiOutlineSearch, HiOutlineChat, HiOutlineTag, HiOutlineCube, HiOutlineViewGrid } from 'react-icons/hi';
 import InvoicePrint from '../components/sales/InvoicePrint';
 import './SalesInvoice.css';
+
+const TABS = [
+  { key: 'ALL', label: 'All Invoices', icon: HiOutlineViewGrid },
+  { key: 'PRODUCT', label: 'Product Invoices', icon: HiOutlineCube },
+  { key: 'SERVICE', label: 'Service Invoices', icon: HiOutlineTag },
+];
 
 export default function SalesInvoice() {
   const navigate = useNavigate();
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState('ALL');
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [showPrintModal, setShowPrintModal] = useState(false);
 
   const fetchInvoices = useCallback(async () => {
     setLoading(true);
     try {
-      const params = searchQuery ? { search: searchQuery } : {};
+      const params = {};
+      if (searchQuery) params.search = searchQuery;
+      if (activeTab !== 'ALL') params.invoiceCategory = activeTab;
       const res = await salesInvoiceApi.getAll(params);
       setInvoices(res.data?.items || []);
     } catch (err) {
@@ -33,7 +41,7 @@ export default function SalesInvoice() {
     } finally {
       setLoading(false);
     }
-  }, [searchQuery]);
+  }, [searchQuery, activeTab]);
 
   useEffect(() => {
     fetchInvoices();
@@ -76,9 +84,6 @@ export default function SalesInvoice() {
     { key: 'invoiceNo', label: 'Invoice No', render: (val) => <span className="font-semibold">{val}</span> },
     { key: 'date', label: 'Date', render: (val) => formatDate(val) },
     { key: 'customerName', label: 'Customer', render: (val, row) => val || row.customerPhone || 'Walk-in' },
-    { key: 'invoiceType', label: 'Type', render: (val) => (
-      <Badge variant={val === 'GST' ? 'primary' : 'secondary'}>{val}</Badge>
-    )},
     { key: 'totalAmount', label: 'Total', align: 'right', render: (val) => formatCurrency(val) },
     { key: 'paymentStatus', label: 'Payment', render: (val, row) => (
       <select 
@@ -100,6 +105,10 @@ export default function SalesInvoice() {
     )},
   ];
 
+  const tabCounts = {
+    ALL: invoices.length, // Only current filter count; for live count you'd need a separate API call
+  };
+
   return (
     <div className="page-wrapper sales-invoice-page">
       <PageHeader 
@@ -109,6 +118,24 @@ export default function SalesInvoice() {
         actionIcon={HiOutlinePlus}
         onAction={() => navigate('/admin/sales-invoice/create')}
       />
+
+      {/* Category Tabs */}
+      <div className="invoice-tabs">
+        {TABS.map(tab => {
+          const Icon = tab.icon;
+          return (
+            <button
+              key={tab.key}
+              className={`invoice-tab-btn ${activeTab === tab.key ? 'active' : ''} invoice-tab-btn--${tab.key.toLowerCase()}`}
+              onClick={() => setActiveTab(tab.key)}
+            >
+              <Icon className="tab-icon" />
+              <span>{tab.label}</span>
+              {activeTab === tab.key && <span className="tab-count">{invoices.length}</span>}
+            </button>
+          );
+        })}
+      </div>
 
       <div className="toolbar">
         <div className="toolbar__filters">
@@ -129,7 +156,7 @@ export default function SalesInvoice() {
           columns={columns} 
           data={invoices} 
           loading={loading}
-          emptyMessage="No invoices found. Start by creating one!"
+          emptyMessage={`No ${activeTab !== 'ALL' ? activeTab.toLowerCase() : ''} invoices found. Start by creating one!`}
         />
       </Card>
 

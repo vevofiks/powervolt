@@ -6,7 +6,7 @@ import Select from '../components/ui/Select';
 import { reportApi } from '../api/reports';
 import { formatCurrency } from '../utils/formatCurrency';
 import { formatDate } from '../utils/formatDate';
-import { HiOutlineChartBar, HiOutlineCube, HiOutlineCurrencyRupee, HiOutlineDownload } from 'react-icons/hi';
+import { HiOutlineChartBar, HiOutlineCube, HiOutlineCurrencyRupee, HiOutlineDownload, HiOutlineTag } from 'react-icons/hi';
 import './Reports.css';
 
 export default function Reports() {
@@ -41,10 +41,13 @@ export default function Reports() {
 
   const renderProfitLoss = () => {
     if (!reportData) return null;
-    const { revenue, grossProfit, purchaseCost, operationalExpenses, netProfit } = reportData;
+    const { revenue, grossProfit, purchaseCost, operationalExpenses, netProfit, categoryStats, totalInvoiceCount } = reportData;
+    const productStats = categoryStats?.product || { count: 0, revenue: 0 };
+    const serviceStats = categoryStats?.service || { count: 0, revenue: 0 };
     
     return (
       <div className="report-content">
+        {/* Overall Summary */}
         <div className="report-grid">
           <Card className="report-stat-card">
             <span className="stat-label">Total Revenue</span>
@@ -64,6 +67,72 @@ export default function Reports() {
               {formatCurrency(netProfit)}
             </span>
           </Card>
+        </div>
+
+        {/* Category Breakdown */}
+        <div className="category-stats-section">
+          <h3 className="category-stats-title">Invoice Category Breakdown</h3>
+          <div className="category-stats-grid">
+            {/* Product Stats */}
+            <div className="category-stat-card category-stat-card--product">
+              <div className="category-stat-header">
+                <span className="category-stat-icon">🏭</span>
+                <span className="category-stat-label">Product Invoices</span>
+              </div>
+              <div className="category-stat-body">
+                <div className="category-stat-row">
+                  <span>Total Invoices</span>
+                  <strong>{productStats.count}</strong>
+                </div>
+                <div className="category-stat-row">
+                  <span>Product Revenue</span>
+                  <strong className="text-green">{formatCurrency(productStats.revenue)}</strong>
+                </div>
+                {revenue > 0 && (
+                  <div className="category-stat-row">
+                    <span>Revenue Share</span>
+                    <strong>{((productStats.revenue / revenue) * 100).toFixed(1)}%</strong>
+                  </div>
+                )}
+              </div>
+              <div className="category-stat-bar">
+                <div
+                  className="category-stat-bar-fill category-stat-bar-fill--product"
+                  style={{ width: revenue > 0 ? `${(productStats.revenue / revenue) * 100}%` : '0%' }}
+                />
+              </div>
+            </div>
+
+            {/* Service Stats */}
+            <div className="category-stat-card category-stat-card--service">
+              <div className="category-stat-header">
+                <span className="category-stat-icon">🔧</span>
+                <span className="category-stat-label">Service Invoices</span>
+              </div>
+              <div className="category-stat-body">
+                <div className="category-stat-row">
+                  <span>Total Invoices</span>
+                  <strong>{serviceStats.count}</strong>
+                </div>
+                <div className="category-stat-row">
+                  <span>Service Revenue</span>
+                  <strong className="text-blue">{formatCurrency(serviceStats.revenue)}</strong>
+                </div>
+                {revenue > 0 && (
+                  <div className="category-stat-row">
+                    <span>Revenue Share</span>
+                    <strong>{((serviceStats.revenue / revenue) * 100).toFixed(1)}%</strong>
+                  </div>
+                )}
+              </div>
+              <div className="category-stat-bar">
+                <div
+                  className="category-stat-bar-fill category-stat-bar-fill--service"
+                  style={{ width: revenue > 0 ? `${(serviceStats.revenue / revenue) * 100}%` : '0%' }}
+                />
+              </div>
+            </div>
+          </div>
         </div>
 
         <Card title="Expense Breakdown" className="mt-20">

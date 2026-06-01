@@ -59,14 +59,28 @@ export default function InvoicePrint({ invoice }) {
   const items = invoice.items || [];
 
   const isGst = invoice.invoiceType === 'GST';
+  const isService = (invoice.invoiceCategory || 'PRODUCT') === 'SERVICE';
   const taxAmount = invoice.taxAmount || 0;
   const cgst = isGst ? (taxAmount / 2) : 0;
   const sgst = isGst ? (taxAmount / 2) : 0;
   const totalQty = items.reduce((sum, item) => sum + (item.qty || 0), 0);
 
+  // Category-specific title
+  const invoiceTitlePrefix = isService ? 'SERVICE' : 'PRODUCT';
+  const invoiceTitle = isGst ? `${invoiceTitlePrefix} TAX INVOICE` : `${invoiceTitlePrefix} INVOICE`;
+
+  // Category-specific border color
+  const categoryColor = isService ? '#2563eb' : '#16a34a';
+
   return (
     <div className="invoice-print-container">
-      <div className="invoice-outer-border">
+      <div className="invoice-outer-border" style={{ borderColor: categoryColor }}>
+
+        {/* ═══ Category Watermark ═══ */}
+        <div className="invoice-watermark" style={{ color: categoryColor }}>
+          {invoiceTitlePrefix}
+        </div>
+
         {/* ═══ Header ═══ */}
         <div className="invoice-header">
           <div className="header-left">
@@ -80,7 +94,12 @@ export default function InvoicePrint({ invoice }) {
             </div>
           </div>
           <div className="header-right">
-            <h2 className="invoice-type-title">{isGst ? 'TAX INVOICE' : 'INVOICE'}</h2>
+            <h2
+              className="invoice-type-title"
+              style={{ color: categoryColor }}
+            >
+              {invoiceTitle}
+            </h2>
             <table className="invoice-meta-table">
               <tbody>
                 <tr>
@@ -91,20 +110,16 @@ export default function InvoicePrint({ invoice }) {
                   <td className="meta-label">Date</td>
                   <td className="meta-value">{formatDate(invoice.date)}</td>
                 </tr>
-                <tr>
-                  <td className="meta-label">Type</td>
-                  <td className="meta-value">{isGst ? 'GST' : 'NON-GST'}</td>
-                </tr>
               </tbody>
             </table>
           </div>
         </div>
 
-        <div className="header-divider" />
+        <div className="header-divider" style={{ background: categoryColor }} />
 
         {/* ═══ Bill To ═══ */}
         <div className="bill-to-section">
-          <div className="bill-to-header">BILL TO</div>
+          <div className="bill-to-header" style={{ background: categoryColor }}>BILL TO</div>
           <div className="bill-to-details">
             <strong className="bill-to-name">{invoice.customerName}</strong>
             {invoice.customerAddress1 && <p>{invoice.customerAddress1}</p>}
@@ -123,11 +138,17 @@ export default function InvoicePrint({ invoice }) {
         <div className="items-table-wrapper">
           <table className="invoice-items-table">
             <thead>
-              <tr>
+              <tr style={{ background: categoryColor }}>
                 <th className="col-sl">Sl</th>
-                <th className="col-product">Product / Service</th>
-                <th className="col-hsn">HSN/SAC</th>
+                {/* SKU — only for PRODUCT */}
+                {!isService && <th className="col-sku">SKU</th>}
+                <th className="col-product">
+                  {isService ? 'Service Description' : 'Product Name'}
+                </th>
+                {/* HSN — only for PRODUCT */}
+                {!isService && <th className="col-hsn">HSN Code</th>}
                 <th className="col-qty">Qty</th>
+                {isService && <th className="col-unit">Unit</th>}
                 <th className="col-rate">Rate</th>
                 <th className="col-amount">Amount</th>
               </tr>
@@ -136,11 +157,19 @@ export default function InvoicePrint({ invoice }) {
               {items.map((item, index) => (
                 <tr key={index}>
                   <td className="col-center">{index + 1}</td>
+                  {!isService && (
+                    <td className="col-center" style={{ fontSize: '10px', color: '#64748b' }}>
+                      {item.sku || '—'}
+                    </td>
+                  )}
                   <td className="col-product-name">
                     <span className="product-name-text">{item.productName}</span>
                   </td>
-                  <td className="col-center">{item.hsnCode || '—'}</td>
+                  {!isService && (
+                    <td className="col-center">{item.hsnCode || '—'}</td>
+                  )}
                   <td className="col-center">{item.qty}</td>
+                  {isService && <td className="col-center">—</td>}
                   <td className="col-right">₹{Number(item.rate).toFixed(2)}</td>
                   <td className="col-right">₹{Number(item.amount).toFixed(2)}</td>
                 </tr>
@@ -148,9 +177,11 @@ export default function InvoicePrint({ invoice }) {
               {/* Totals row inside table */}
               <tr className="items-total-row">
                 <td></td>
+                {!isService && <td></td>}
                 <td className="items-total-label">Total</td>
-                <td></td>
+                {!isService && <td></td>}
                 <td className="col-center total-qty">{totalQty}</td>
+                {isService && <td></td>}
                 <td></td>
                 <td className="col-right total-amount">₹{invoice.subtotal.toFixed(2)}</td>
               </tr>
@@ -187,11 +218,15 @@ export default function InvoicePrint({ invoice }) {
                       <td className="label">SGST @ 9%</td>
                       <td className="value">₹{sgst.toFixed(2)}</td>
                     </tr>
+                    <tr>
+                      <td className="label" style={{ color: '#64748b', fontSize: '10px' }}>Total GST</td>
+                      <td className="value" style={{ fontSize: '10px' }}>₹{taxAmount.toFixed(2)}</td>
+                    </tr>
                   </>
                 )}
                 <tr className="grand-total-row">
-                  <td className="label">TOTAL</td>
-                  <td className="value">₹{invoice.totalAmount.toFixed(2)}</td>
+                  <td className="label" style={{ color: categoryColor }}>TOTAL</td>
+                  <td className="value" style={{ color: categoryColor }}>₹{invoice.totalAmount.toFixed(2)}</td>
                 </tr>
               </tbody>
             </table>
@@ -233,7 +268,7 @@ export default function InvoicePrint({ invoice }) {
           </div>
         )}
 
-        <div className="invoice-footer-note">
+        <div className="invoice-footer-note" style={{ color: categoryColor }}>
           Thank You For Your Business!
         </div>
       </div>
