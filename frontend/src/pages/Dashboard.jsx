@@ -48,22 +48,7 @@ export default function Dashboard() {
     { label: 'Total Invoices', value: (summary.salesCount || 0).toString(), icon: HiOutlineExclamationCircle, color: 'red' },
   ];
 
-  const categoryStats = [
-    {
-      label: 'Product Invoices',
-      count: summary.productSalesCount || 0,
-      revenue: summary.productSalesRevenue || 0,
-      emoji: '🏭',
-      colorClass: 'product'
-    },
-    {
-      label: 'Service Invoices',
-      count: summary.serviceSalesCount || 0,
-      revenue: summary.serviceSalesRevenue || 0,
-      emoji: '🔧',
-      colorClass: 'service'
-    },
-  ];
+
 
   const quickActions = [
     { label: 'Create Sale', path: '/admin/sales-invoice/create', icon: HiOutlineTrendingUp, color: 'green' },
@@ -102,23 +87,7 @@ export default function Dashboard() {
         })}
       </div>
 
-      {/* Invoice Category Stats */}
-      <div className="dashboard__category-stats">
-        {categoryStats.map((cat) => (
-          <Card key={cat.label} className={`dashboard__category-card dashboard__category-card--${cat.colorClass}`}>
-            <div className="dashboard__category-left">
-              <span className="dashboard__category-emoji">{cat.emoji}</span>
-              <div>
-                <span className="dashboard__category-label">{cat.label}</span>
-                <span className="dashboard__category-count">{cat.count} this month</span>
-              </div>
-            </div>
-            <div className="dashboard__category-revenue">
-              {formatCurrency(cat.revenue)}
-            </div>
-          </Card>
-        ))}
-      </div>
+
 
       <div className="dashboard__grid">
         {/* Account Balances */}
@@ -141,18 +110,7 @@ export default function Dashboard() {
             {recentSales.map((sale, i) => (
               <div key={i} className="dashboard__list-item">
                 <div className="item-info">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span className="item-title">{sale.invoiceNo}</span>
-                    <span
-                      className="mini-category-badge"
-                      style={{
-                        background: sale.invoiceCategory === 'SERVICE' ? '#dbeafe' : '#dcfce7',
-                        color: sale.invoiceCategory === 'SERVICE' ? '#1d4ed8' : '#15803d'
-                      }}
-                    >
-                      {sale.invoiceCategory === 'SERVICE' ? '🔧' : '🏭'}
-                    </span>
-                  </div>
+                  <span className="item-title">{sale.invoiceNo}</span>
                   <span className="item-sub">{sale.customerName || 'Walk-in'}</span>
                 </div>
                 <div className="item-meta">

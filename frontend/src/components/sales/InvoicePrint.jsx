@@ -59,18 +59,14 @@ export default function InvoicePrint({ invoice }) {
   const items = invoice.items || [];
 
   const isGst = invoice.invoiceType === 'GST';
-  const isService = (invoice.invoiceCategory || 'PRODUCT') === 'SERVICE';
   const taxAmount = invoice.taxAmount || 0;
   const cgst = isGst ? (taxAmount / 2) : 0;
   const sgst = isGst ? (taxAmount / 2) : 0;
   const totalQty = items.reduce((sum, item) => sum + (item.qty || 0), 0);
 
-  // Category-specific title
-  const invoiceTitlePrefix = isService ? 'SERVICE' : 'PRODUCT';
-  const invoiceTitle = isGst ? `${invoiceTitlePrefix} TAX INVOICE` : `${invoiceTitlePrefix} INVOICE`;
-
-  // Category-specific border color
-  const categoryColor = isService ? '#2563eb' : '#16a34a';
+  // Unified invoice title (no product/service prefix since bill can have both)
+  const invoiceTitle = isGst ? 'TAX INVOICE' : 'INVOICE';
+  const categoryColor = '#16a34a'; // consistent green brand color
 
   return (
     <div className="invoice-print-container">
@@ -78,7 +74,7 @@ export default function InvoicePrint({ invoice }) {
 
         {/* ═══ Category Watermark ═══ */}
         <div className="invoice-watermark" style={{ color: categoryColor }}>
-          {invoiceTitlePrefix}
+          SALES
         </div>
 
         {/* ═══ Header ═══ */}
@@ -140,15 +136,9 @@ export default function InvoicePrint({ invoice }) {
             <thead>
               <tr style={{ background: categoryColor }}>
                 <th className="col-sl">Sl</th>
-                {/* SKU — only for PRODUCT */}
-                {!isService && <th className="col-sku">SKU</th>}
-                <th className="col-product">
-                  {isService ? 'Service Description' : 'Product Name'}
-                </th>
-                {/* HSN — only for PRODUCT */}
-                {!isService && <th className="col-hsn">HSN Code</th>}
+                <th className="col-product">Name / Description</th>
+                <th className="col-hsn">HSN Code</th>
                 <th className="col-qty">Qty</th>
-                {isService && <th className="col-unit">Unit</th>}
                 <th className="col-rate">Rate</th>
                 <th className="col-amount">Amount</th>
               </tr>
@@ -157,19 +147,14 @@ export default function InvoicePrint({ invoice }) {
               {items.map((item, index) => (
                 <tr key={index}>
                   <td className="col-center">{index + 1}</td>
-                  {!isService && (
-                    <td className="col-center" style={{ fontSize: '10px', color: '#64748b' }}>
-                      {item.sku || '—'}
-                    </td>
-                  )}
                   <td className="col-product-name">
                     <span className="product-name-text">{item.productName}</span>
+                    {item.itemType === 'SERVICE' && (
+                      <span style={{ display: 'inline-block', marginLeft: '6px', fontSize: '9px', background: '#dbeafe', color: '#1d4ed8', borderRadius: '4px', padding: '1px 5px', fontWeight: 700, verticalAlign: 'middle' }}>SVC</span>
+                    )}
                   </td>
-                  {!isService && (
-                    <td className="col-center">{item.hsnCode || '—'}</td>
-                  )}
+                  <td className="col-center">{item.hsnCode || '—'}</td>
                   <td className="col-center">{item.qty}</td>
-                  {isService && <td className="col-center">—</td>}
                   <td className="col-right">₹{Number(item.rate).toFixed(2)}</td>
                   <td className="col-right">₹{Number(item.amount).toFixed(2)}</td>
                 </tr>
@@ -177,11 +162,9 @@ export default function InvoicePrint({ invoice }) {
               {/* Totals row inside table */}
               <tr className="items-total-row">
                 <td></td>
-                {!isService && <td></td>}
                 <td className="items-total-label">Total</td>
-                {!isService && <td></td>}
+                <td></td>
                 <td className="col-center total-qty">{totalQty}</td>
-                {isService && <td></td>}
                 <td></td>
                 <td className="col-right total-amount">₹{invoice.subtotal.toFixed(2)}</td>
               </tr>
