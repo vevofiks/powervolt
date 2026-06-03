@@ -2,6 +2,8 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import AppLayout from './components/layout/AppLayout';
 import ErrorBoundary from './components/common/ErrorBoundary';
+import ProtectedRoute from './components/common/ProtectedRoute';
+import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import SalesInvoice from './pages/SalesInvoice';
 import CreateSalesInvoice from './pages/CreateSalesInvoice';
@@ -36,7 +38,8 @@ export default function App() {
         <Toaster position="top-right" />
         <Routes>
           <Route path="/" element={<LandingPage />} />
-          <Route path="/admin">
+          <Route path="/login" element={<Login />} />
+          <Route path="/admin" element={<ProtectedRoute />}>
             <Route element={<AppLayout />}>
               <Route index element={<Dashboard />} />
               <Route path="sales-invoice" element={<SalesInvoice />} />
@@ -73,3 +76,4 @@ export default function App() {
     </ErrorBoundary>
   );
 }
+

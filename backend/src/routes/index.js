@@ -1,19 +1,24 @@
 const router = require('express').Router();
+const authMiddleware = require('../middlewares/auth');
 
-// ─── Mount All Routes ─────────────────────────────────────────
-router.use('/dashboard', require('./dashboard.routes'));
-router.use('/sales-invoices', require('./salesInvoice.routes'));
-router.use('/service-invoices', require('./serviceInvoice.routes'));
-router.use('/customers', require('./customer.routes'));
-router.use('/products', require('./product.routes'));
-router.use('/accounts', require('./account.routes'));
-router.use('/expenses', require('./expense.routes'));
-router.use('/work-sites', require('./workSite.routes'));
-router.use('/workers', require('./worker.routes'));
-router.use('/salaries', require('./salary.routes'));
-router.use('/reports', require('./report.routes'));
-router.use('/settings', require('./setting.routes'));
-router.use('/vendors', require('./vendor.routes'));
-router.use('/purchase-bills', require('./purchaseBill.routes'));
+// ─── Public Auth Routes ───────────────────────────────────────
+router.use('/auth', require('./auth.routes'));
+
+// ─── Protected Business Routes ────────────────────────────────
+router.use('/dashboard', authMiddleware, require('./dashboard.routes'));
+router.use('/sales-invoices', authMiddleware, require('./salesInvoice.routes'));
+router.use('/service-invoices', authMiddleware, require('./serviceInvoice.routes'));
+router.use('/customers', authMiddleware, require('./customer.routes'));
+router.use('/products', authMiddleware, require('./product.routes'));
+router.use('/accounts', authMiddleware, require('./account.routes'));
+router.use('/expenses', authMiddleware, require('./expense.routes'));
+router.use('/work-sites', authMiddleware, require('./workSite.routes'));
+router.use('/workers', authMiddleware, require('./worker.routes'));
+router.use('/salaries', authMiddleware, require('./salary.routes'));
+router.use('/reports', authMiddleware, require('./report.routes'));
+router.use('/settings', authMiddleware, require('./setting.routes'));
+router.use('/vendors', authMiddleware, require('./vendor.routes'));
+router.use('/purchase-bills', authMiddleware, require('./purchaseBill.routes'));
 
 module.exports = router;
+

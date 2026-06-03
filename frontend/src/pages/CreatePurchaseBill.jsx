@@ -36,6 +36,7 @@ export default function CreatePurchaseBill() {
     vendorGstNumber: '',
     items: [{ productId: '', productName: '', sku: '', hsnCode: '', qty: 1, purchasePrice: 0, salePrice: 0, amount: 0 }],
     accountId: '',
+    discount: 0,
     notes: '',
     terms: '',
     date: new Date().toISOString().split('T')[0],
@@ -205,7 +206,7 @@ export default function CreatePurchaseBill() {
   // Calculations
   const subtotal = bill.items.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
   const taxAmount = bill.billType === 'GST' ? subtotal * 0.18 : 0;
-  const totalAmount = subtotal + taxAmount;
+  const totalAmount = subtotal + taxAmount - (parseFloat(bill.discount) || 0);
 
   // Selected account for balance check
   const selectedAccount = accounts.find(acc => acc.id === bill.accountId) || null;
@@ -431,6 +432,15 @@ export default function CreatePurchaseBill() {
                       </div>
                     </>
                   )}
+                  <div className="summary-row">
+                    <span>Discount:</span>
+                    <input
+                      type="number"
+                      className="discount-input"
+                      value={bill.discount}
+                      onChange={(e) => setBill(prev => ({ ...prev, discount: parseFloat(e.target.value) || 0 }))}
+                    />
+                  </div>
                   <div className="summary-row grand-total">
                     <span>Grand Total:</span>
                     <span>₹{totalAmount.toFixed(2)}</span>

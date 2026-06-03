@@ -4,7 +4,7 @@ const ApiError = require('../utils/ApiError');
 
 class PurchaseBillService {
   async createBill(data) {
-    const { vendorId, accountId, items, billNo, date, billType, subtotal, taxAmount, totalAmount, notes, terms, paymentStatus } = data;
+    const { vendorId, accountId, items, billNo, date, billType, subtotal, discount, taxAmount, totalAmount, notes, terms, paymentStatus } = data;
 
     // 1. Get vendor details if provided
     let vendorName = '';
@@ -38,6 +38,7 @@ class PurchaseBillService {
         vendorGstNumber,
         accountId,
         subtotal: parseFloat(subtotal) || 0,
+        discount: parseFloat(discount) || 0,
         taxAmount: parseFloat(taxAmount) || 0,
         totalAmount: parseFloat(totalAmount) || 0,
         notes,

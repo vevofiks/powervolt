@@ -169,3 +169,27 @@
     display: block;
   }
 }
+
+.sidebar__logout-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-secondary);
+  font-size: var(--font-sm);
+  font-weight: 500;
+  transition: all var(--transition-fast);
+  background: transparent;
+  cursor: pointer;
+  border: none;
+  text-align: left;
+  margin-bottom: var(--spacing-sm);
+}
+
+.sidebar__logout-btn:hover {
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+}
+

@@ -163,6 +163,12 @@ export default function ViewPurchaseBill() {
                       </tr>
                     </>
                   )}
+                  {parseFloat(bill.discount) > 0 && (
+                    <tr>
+                      <td className="label">Discount</td>
+                      <td className="value">-{formatCurrency(bill.discount)}</td>
+                    </tr>
+                  )}
                   <tr className="grand-total-row">
                     <td className="label">Total Amount</td>
                     <td className="value">{formatCurrency(bill.totalAmount)}</td>

@@ -11,7 +11,10 @@ const api = axios.create({
 // ─── Request Interceptor ──────────────────────────────────────
 api.interceptors.request.use(
   (config) => {
-    // Auth headers can be added here later
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
     return config;
   },
   (error) => Promise.reject(error)
@@ -27,8 +30,19 @@ api.interceptors.response.use(
       'Something went wrong';
 
     console.error('[API Error]', message);
+
+    if (error.response?.status === 401) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('username');
+      // Only redirect if not already on the login page or landing page
+      if (window.location.pathname !== '/login' && window.location.pathname !== '/') {
+        window.location.href = '/login';
+      }
+    }
+
     return Promise.reject({ message, status: error.response?.status });
   }
 );
 
 export default api;
+

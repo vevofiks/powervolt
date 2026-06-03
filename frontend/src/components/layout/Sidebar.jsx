@@ -1,10 +1,20 @@
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { NAV_ITEMS, APP_NAME } from '../../utils/constants';
-import { HiOutlineX, HiOutlineLightningBolt } from 'react-icons/hi';
+import { HiOutlineX, HiOutlineLightningBolt, HiOutlineLogout } from 'react-icons/hi';
+import toast from 'react-hot-toast';
 import './Sidebar.css';
 
 export default function Sidebar({ isOpen, onClose }) {
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('username');
+    toast.success('Logged out successfully');
+    navigate('/login');
+    onClose();
+  };
 
   return (
     <>
@@ -46,6 +56,15 @@ export default function Sidebar({ isOpen, onClose }) {
 
         {/* Footer */}
         <div className="sidebar__footer">
+          <button 
+            onClick={handleLogout} 
+            className="sidebar__logout-btn"
+            id="nav-logout"
+          >
+            <HiOutlineLogout className="sidebar__link-icon" />
+            <span>Logout</span>
+          </button>
+          
           <div className="sidebar__footer-badge">
             <HiOutlineLightningBolt />
             <span>v1.0.0</span>
@@ -55,3 +74,4 @@ export default function Sidebar({ isOpen, onClose }) {
     </>
   );
 }
+
