@@ -26,10 +26,30 @@ class PurchaseBillService {
       throw new ApiError(404, 'Paying account not found');
     }
 
+    // Generate Bill No format Pv-bill-YYYY/SEQ if not provided or if it's the auto-generated PB- one from frontend
+    let finalBillNo = billNo;
+    if (!finalBillNo || finalBillNo.startsWith('PB-')) {
+      const year = (date ? new Date(date) : new Date()).getFullYear();
+      const prefix = `Pv-bill-${year}/`;
+
+      const lastBill = await prisma.purchaseBill.findFirst({
+        where: { billNo: { startsWith: prefix } },
+        orderBy: { billNo: 'desc' }
+      });
+
+      let nextSeq = 14;
+      if (lastBill) {
+        const lastSeq = parseInt(lastBill.billNo.split('/').pop(), 10);
+        if (!isNaN(lastSeq)) nextSeq = lastSeq + 1;
+      }
+
+      finalBillNo = `${prefix}${String(nextSeq).padStart(3, '0')}`;
+    }
+
     // 3. Create the PurchaseBill and Items in a single nested write
     const bill = await prisma.purchaseBill.create({
       data: {
-        billNo,
+        billNo: finalBillNo,
         date: date ? new Date(date) : new Date(),
         billType: billType || 'NON_GST',
         vendorId,

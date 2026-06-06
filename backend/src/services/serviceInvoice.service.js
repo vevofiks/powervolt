@@ -13,8 +13,21 @@ class ServiceInvoiceService {
     // Generate Invoice No if not provided
     let finalInvoiceNo = invoiceNo;
     if (!finalInvoiceNo) {
-      const count = await prisma.serviceInvoice.count();
-      finalInvoiceNo = `SV-${String(count + 1).padStart(4, '0')}`;
+      const year = (date ? new Date(date) : new Date()).getFullYear();
+      const prefix = `Pv-inv-${year}/`;
+
+      const lastInvoice = await prisma.serviceInvoice.findFirst({
+        where: { invoiceNo: { startsWith: prefix } },
+        orderBy: { invoiceNo: 'desc' }
+      });
+
+      let nextSeq = 14;
+      if (lastInvoice) {
+        const lastSeq = parseInt(lastInvoice.invoiceNo.split('/').pop(), 10);
+        if (!isNaN(lastSeq)) nextSeq = lastSeq + 1;
+      }
+
+      finalInvoiceNo = `${prefix}${String(nextSeq).padStart(3, '0')}`;
     }
 
     const invoice = await prisma.serviceInvoice.create({

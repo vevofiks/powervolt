@@ -95,18 +95,16 @@ const create = async (data) => {
 
   // 1. Generate Invoice Number — sequential query to avoid race conditions
   const year = targetDate.getFullYear();
-  const month = String(targetDate.getMonth() + 1).padStart(2, '0');
-  const day = String(targetDate.getDate()).padStart(2, '0');
-  const prefix = `PV-INV-${year}${month}${day}-`;
+  const prefix = `Pv-inv-${year}/`;
 
   const lastInvoice = await prisma.salesInvoice.findFirst({
     where: { invoiceNo: { startsWith: prefix } },
     orderBy: { invoiceNo: 'desc' }
   });
 
-  let nextSeq = 14;
+  let nextSeq = 14; // Default starting sequence as per previous logic
   if (lastInvoice) {
-    const lastSeq = parseInt(lastInvoice.invoiceNo.split('-').pop(), 10);
+    const lastSeq = parseInt(lastInvoice.invoiceNo.split('/').pop(), 10);
     if (!isNaN(lastSeq)) nextSeq = lastSeq + 1;
   }
 

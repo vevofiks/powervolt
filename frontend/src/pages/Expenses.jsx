@@ -23,7 +23,8 @@ const CATEGORIES = [
   { value: 'SITE_EXPENSE', label: 'Site Expense' },
   { value: 'OFFICE', label: 'Office' },
   { value: 'FOOD', label: 'Food' },
-  { value: 'MISC', label: 'Miscellaneous' }
+  { value: 'MISC', label: 'Miscellaneous' },
+  { value: 'OTHER', label: 'Other' }
 ];
 
 export default function Expenses() {

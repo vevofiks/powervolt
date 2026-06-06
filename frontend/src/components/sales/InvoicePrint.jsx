@@ -149,9 +149,6 @@ export default function InvoicePrint({ invoice }) {
                   <td className="col-center">{index + 1}</td>
                   <td className="col-product-name">
                     <span className="product-name-text">{item.productName}</span>
-                    {item.itemType === 'SERVICE' && (
-                      <span style={{ display: 'inline-block', marginLeft: '6px', fontSize: '9px', background: '#dbeafe', color: '#1d4ed8', borderRadius: '4px', padding: '1px 5px', fontWeight: 700, verticalAlign: 'middle' }}>SVC</span>
-                    )}
                   </td>
                   <td className="col-center">{item.hsnCode || '—'}</td>
                   <td className="col-center">{item.qty}</td>
