@@ -95,7 +95,7 @@ const create = async (data) => {
 
   // 1. Generate Invoice Number — sequential query to avoid race conditions
   const year = targetDate.getFullYear();
-  const prefix = `Pv-inv-${year}/`;
+  const prefix = `PV-INV-${year}/`;
 
   const lastInvoice = await prisma.salesInvoice.findFirst({
     where: { invoiceNo: { startsWith: prefix } },

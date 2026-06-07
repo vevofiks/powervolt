@@ -14,7 +14,7 @@ class ServiceInvoiceService {
     let finalInvoiceNo = invoiceNo;
     if (!finalInvoiceNo) {
       const year = (date ? new Date(date) : new Date()).getFullYear();
-      const prefix = `Pv-inv-${year}/`;
+      const prefix = `PV-INV-${year}/`;
 
       const lastInvoice = await prisma.serviceInvoice.findFirst({
         where: { invoiceNo: { startsWith: prefix } },

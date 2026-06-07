@@ -84,8 +84,8 @@ export default function InvoicePrint({ invoice }) {
             <h1 className="company-name">{settings?.companyName || 'POWER VOLT'}</h1>
             <div className="company-tagline">Electrical Engineering & Services</div>
             <div className="company-info">
-              <p>{settings?.companyAddress || '595-B, Amajoor (PO), Krakkunnu, Manjeri, Malappuram (Dist), 676122'}</p>
-              <p>GSTIN: {settings?.companyGstNumber || '32AANAPL6617R1ZO'} &nbsp;|&nbsp; PAN: {settings?.companyPan || 'ANAPL6617R'}</p>
+              <p>{settings?.companyAddress || '595-B, Amayoor, Karakunnu, Kammadagi Padi, Manjeri, Malappuram, Kerala - 676123'}</p>
+              <p>GSTIN: {settings?.companyGstin || '32ANAPL6617R1ZO'} &nbsp;|&nbsp; PAN: {settings?.companyPan || 'ANAPL6617R'}</p>
               <p>Contact: {settings?.companyPhone || '9567965664'}</p>
             </div>
           </div>

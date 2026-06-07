@@ -9,39 +9,36 @@ import Modal from '../components/ui/Modal';
 import { salesInvoiceApi } from '../api/salesInvoices';
 import { formatCurrency } from '../utils/formatCurrency';
 import { formatDate } from '../utils/formatDate';
-import { HiOutlinePlus, HiOutlinePrinter, HiOutlineTrash, HiOutlineSearch, HiOutlineChat, HiOutlineTag, HiOutlineCube, HiOutlineViewGrid } from 'react-icons/hi';
+import { HiOutlinePlus, HiOutlinePrinter, HiOutlineTrash, HiOutlineSearch, HiOutlineChat } from 'react-icons/hi';
 import InvoicePrint from '../components/sales/InvoicePrint';
 import './SalesInvoice.css';
 
-const TABS = [
-  { key: 'ALL', label: 'All Invoices', icon: HiOutlineViewGrid },
-  { key: 'PRODUCT', label: 'Product Invoices', icon: HiOutlineCube },
-  { key: 'SERVICE', label: 'Service Invoices', icon: HiOutlineTag },
-];
+
 
 export default function SalesInvoice() {
   const navigate = useNavigate();
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState('ALL');
   const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [showPrintModal, setShowPrintModal] = useState(false);
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState({ totalPages: 1, hasNext: false, hasPrev: false });
 
   const fetchInvoices = useCallback(async () => {
     setLoading(true);
     try {
-      const params = {};
+      const params = { page, limit: 15 };
       if (searchQuery) params.search = searchQuery;
-      if (activeTab !== 'ALL') params.invoiceCategory = activeTab;
       const res = await salesInvoiceApi.getAll(params);
       setInvoices(res.data?.items || []);
+      setPagination(res.data?.pagination || { totalPages: 1, hasNext: false, hasPrev: false });
     } catch (err) {
       toast.error('Failed to load invoices');
     } finally {
       setLoading(false);
     }
-  }, [searchQuery, activeTab]);
+  }, [searchQuery, page]);
 
   useEffect(() => {
     fetchInvoices();
@@ -105,10 +102,6 @@ export default function SalesInvoice() {
     )},
   ];
 
-  const tabCounts = {
-    ALL: invoices.length, // Only current filter count; for live count you'd need a separate API call
-  };
-
   return (
     <div className="page-wrapper sales-invoice-page">
       <PageHeader 
@@ -118,24 +111,6 @@ export default function SalesInvoice() {
         actionIcon={HiOutlinePlus}
         onAction={() => navigate('/admin/sales-invoice/create')}
       />
-
-      {/* Category Tabs */}
-      <div className="invoice-tabs">
-        {TABS.map(tab => {
-          const Icon = tab.icon;
-          return (
-            <button
-              key={tab.key}
-              className={`invoice-tab-btn ${activeTab === tab.key ? 'active' : ''} invoice-tab-btn--${tab.key.toLowerCase()}`}
-              onClick={() => setActiveTab(tab.key)}
-            >
-              <Icon className="tab-icon" />
-              <span>{tab.label}</span>
-              {activeTab === tab.key && <span className="tab-count">{invoices.length}</span>}
-            </button>
-          );
-        })}
-      </div>
 
       <div className="toolbar">
         <div className="toolbar__filters">
@@ -156,8 +131,31 @@ export default function SalesInvoice() {
           columns={columns} 
           data={invoices} 
           loading={loading}
-          emptyMessage={`No ${activeTab !== 'ALL' ? activeTab.toLowerCase() : ''} invoices found. Start by creating one!`}
+          emptyMessage="No invoices found. Start by creating one!"
         />
+        {pagination.totalPages > 1 && (
+          <div className="pagination-controls" style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '12px', padding: '16px' }}>
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={!pagination.hasPrev}
+              onClick={() => setPage(p => Math.max(1, p - 1))}
+            >
+              Previous
+            </Button>
+            <span style={{ fontSize: '13px', fontWeight: 500 }}>
+              Page {page} of {pagination.totalPages}
+            </span>
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={!pagination.hasNext}
+              onClick={() => setPage(p => p + 1)}
+            >
+              Next
+            </Button>
+          </div>
+        )}
       </Card>
 
       <Modal 

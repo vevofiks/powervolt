@@ -30,7 +30,7 @@ class PurchaseBillService {
     let finalBillNo = billNo;
     if (!finalBillNo || finalBillNo.startsWith('PB-')) {
       const year = (date ? new Date(date) : new Date()).getFullYear();
-      const prefix = `Pv-bill-${year}/`;
+      const prefix = `PV-BILL-${year}/`;
 
       const lastBill = await prisma.purchaseBill.findFirst({
         where: { billNo: { startsWith: prefix } },
