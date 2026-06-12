@@ -21,4 +21,9 @@ const updatePaymentStatus = catchAsync(async (req, res) => {
   res.status(200).json({ success: true, data: invoice });
 });
 
-module.exports = { create, getAll, getById, updatePaymentStatus };
+const remove = catchAsync(async (req, res) => {
+  await serviceInvoiceService.remove(req.params.id);
+  res.status(200).json({ success: true, message: 'Service Invoice deleted successfully' });
+});
+
+module.exports = { create, getAll, getById, updatePaymentStatus, remove };

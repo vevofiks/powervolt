@@ -18,6 +18,7 @@ const getAll = async (query = {}) => {
   if (query.category) where.category = query.category;
   if (query.accountId) where.accountId = query.accountId;
   if (query.workSiteId) where.workSiteId = query.workSiteId;
+  if (query.workerId) where.workerId = query.workerId;
 
   if (query.startDate || query.endDate) {
     where.date = {};
@@ -40,6 +41,7 @@ const getAll = async (query = {}) => {
     include: {
       account: { select: { accountName: true } },
       workSite: { select: { name: true } },
+      worker: { select: { name: true } },
       items: true
     },
     orderBy: { date: 'desc' },
@@ -58,7 +60,7 @@ const getAll = async (query = {}) => {
 const getById = async (id) => {
   const expense = await prisma.expense.findUnique({
     where: { id },
-    include: { account: true, workSite: true, items: true }
+    include: { account: true, workSite: true, worker: true, items: true }
   });
   if (!expense) throw ApiError.notFound('Expense not found');
   return expense;
@@ -68,11 +70,15 @@ const getById = async (id) => {
  * Record a new expense using sequential direct queries (no transactions).
  */
 const create = async (data) => {
-  const { date, title, category, amount, payee, reference, notes, receiptUrl, accountId, workSiteId } = data;
+  const { date, title, category, amount, gstPaid, payee, reference, notes, receiptUrl, accountId, workSiteId, workerId } = data;
 
   if (!accountId) throw ApiError.badRequest('Payment account is required');
   if (!amount || amount <= 0) throw ApiError.badRequest('Valid expense amount is required');
   if (!title) throw ApiError.badRequest('Expense title is required');
+
+  if (category === 'SALARY_PAYMENT' && !workerId) {
+    throw ApiError.badRequest('Staff member is required for salary payment category');
+  }
 
   // 1. Create Expense record
   const expense = await prisma.expense.create({
@@ -81,12 +87,14 @@ const create = async (data) => {
       title,
       category,
       amount: parseFloat(amount),
+      gstPaid: gstPaid ? parseFloat(gstPaid) : 0,
       payee,
       reference,
       notes,
       receiptUrl,
       accountId,
       workSiteId: workSiteId || null,
+      workerId: category === 'SALARY_PAYMENT' ? workerId : null,
       items: data.items && data.items.length > 0 ? {
         create: data.items.map(item => ({
           description: item.description,
@@ -110,6 +118,20 @@ const create = async (data) => {
     linkedId: expense.id
   });
 
+  // 3. If category is SALARY_PAYMENT, automatically create a corresponding SalaryPayment record
+  if (category === 'SALARY_PAYMENT') {
+    await prisma.salaryPayment.create({
+      data: {
+        workerId,
+        amount: parseFloat(amount),
+        date: date ? new Date(date) : new Date(),
+        accountId,
+        notes: notes || `Salary Payment: ${title}`,
+        expenseId: expense.id
+      }
+    });
+  }
+
   return expense;
 };
 
@@ -120,12 +142,59 @@ const update = async (id, data) => {
   const existing = await prisma.expense.findUnique({ where: { id } });
   if (!existing) throw ApiError.notFound('Expense not found');
 
-  const { title, category, payee, reference, notes, receiptUrl, workSiteId } = data;
+  const { title, category, payee, reference, notes, receiptUrl, workSiteId, workerId, gstPaid } = data;
 
-  return await prisma.expense.update({
+  if (category === 'SALARY_PAYMENT' && !workerId) {
+    throw ApiError.badRequest('Staff member is required for salary payment category');
+  }
+
+  const updatedExpense = await prisma.expense.update({
     where: { id },
-    data: { title, category, payee, reference, notes, receiptUrl, workSiteId: workSiteId || null }
+    data: { 
+      title, 
+      category, 
+      payee, 
+      reference, 
+      notes, 
+      receiptUrl, 
+      workSiteId: workSiteId || null,
+      workerId: category === 'SALARY_PAYMENT' ? workerId : null,
+      gstPaid: gstPaid ? parseFloat(gstPaid) : 0
+    }
   });
+
+  // Update SalaryPayment if it exists
+  if (category === 'SALARY_PAYMENT') {
+    const existingPayment = await prisma.salaryPayment.findUnique({ where: { expenseId: id } });
+    if (existingPayment) {
+      await prisma.salaryPayment.update({
+        where: { expenseId: id },
+        data: {
+          workerId,
+          notes: notes || `Salary Payment: ${title}`
+        }
+      });
+    } else {
+      await prisma.salaryPayment.create({
+        data: {
+          workerId,
+          amount: parseFloat(updatedExpense.amount),
+          date: new Date(updatedExpense.date),
+          accountId: updatedExpense.accountId,
+          notes: notes || `Salary Payment: ${title}`,
+          expenseId: id
+        }
+      });
+    }
+  } else {
+    // If category changed from SALARY_PAYMENT to something else, remove SalaryPayment
+    const existingPayment = await prisma.salaryPayment.findUnique({ where: { expenseId: id } });
+    if (existingPayment) {
+      await prisma.salaryPayment.delete({ where: { expenseId: id } });
+    }
+  }
+
+  return updatedExpense;
 };
 
 /**
@@ -146,7 +215,7 @@ const remove = async (id) => {
     linkedId: expense.id
   });
 
-  // 2. Delete expense record (cascade handles items)
+  // 2. Delete expense record (cascade handles items, and also deletes the linked SalaryPayment)
   await prisma.expense.delete({ where: { id } });
   return true;
 };

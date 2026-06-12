@@ -90,21 +90,45 @@ const getById = async (id) => {
   });
   if (!site) throw ApiError.notFound('Work Site not found');
 
-  const expensesAgg = await prisma.expense.aggregate({
-    where: { workSiteId: id },
-    _sum: { amount: true }
-  });
+  // Labor Cost Calculated (sum of site work entries amount)
   const entriesAgg = await prisma.siteWorkEntry.aggregate({
     where: { workSiteId: id },
     _sum: { amount: true }
   });
+  const laborCostCalculated = entriesAgg._sum.amount || 0;
 
-  const totalExpenses = expensesAgg._sum.amount || 0;
-  const totalLaborCost = entriesAgg._sum.amount || 0;
+  // Labor Cost Paid (sum of expenses of category SALARY_PAYMENT linked to this site)
+  const laborPaidAgg = await prisma.expense.aggregate({
+    where: { workSiteId: id, category: 'SALARY_PAYMENT' },
+    _sum: { amount: true }
+  });
+  const laborCostPaid = laborPaidAgg._sum.amount || 0;
+
+  // Other Expenses (sum of expenses NOT of category SALARY_PAYMENT linked to this site)
+  const otherExpensesAgg = await prisma.expense.aggregate({
+    where: { 
+      workSiteId: id, 
+      category: { not: 'SALARY_PAYMENT' } 
+    },
+    _sum: { amount: true }
+  });
+  const otherExpenses = otherExpensesAgg._sum.amount || 0;
+
+  const revenue = site.budget || 0;
+  const profit = revenue - laborCostCalculated - otherExpenses;
 
   return {
     ...site,
-    stats: { totalExpenses, totalLaborCost, totalSiteCost: totalExpenses + totalLaborCost }
+    stats: { 
+      laborCostCalculated, 
+      laborCostPaid, 
+      otherExpenses, 
+      revenue, 
+      profit,
+      totalExpenses: laborCostPaid + otherExpenses,
+      totalLaborCost: laborCostCalculated,
+      totalSiteCost: laborCostCalculated + otherExpenses
+    }
   };
 };
 

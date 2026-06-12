@@ -181,16 +181,16 @@ export default function WorkSiteDetails() {
       <div className="tab-content">
         {activeTab === 'overview' && (
           <div className="overview-tab">
-            <Card title="Project Info">
-              <div className="info-grid">
+            <Card title="Project Site Profitability">
+              <div className="info-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
                 <div className="info-item"><label>Start Date</label><span>{formatDate(site.startDate)}</span></div>
                 <div className="info-item"><label>End Date</label><span>{site.endDate ? formatDate(site.endDate) : '—'}</span></div>
                 <div className="info-item"><label>Status</label><Badge variant="primary">{site.status}</Badge></div>
-                <div className="info-item"><label>Budget</label><span>{site.budget > 0 ? formatCurrency(site.budget) : 'N/A'}</span></div>
-                <div className="info-item"><label>Budget Used</label><span>{site.budget > 0 ? ((site.stats.totalSiteCost / site.budget) * 100).toFixed(1) + '%' : 'N/A'}</span></div>
-                <div className="info-item"><label>Labor Cost</label><span>{formatCurrency(site.stats.totalLaborCost)}</span></div>
-                <div className="info-item"><label>Expenses</label><span>{formatCurrency(site.stats.totalExpenses)}</span></div>
-                <div className="info-item"><label>Total Cost</label><span style={{ fontWeight: 700 }}>{formatCurrency(site.stats.totalSiteCost)}</span></div>
+                <div className="info-item"><label>Site Revenue (Budget)</label><span className="font-semibold text-green">{formatCurrency(site.stats.revenue)}</span></div>
+                <div className="info-item"><label>Labor Cost Calculated</label><span className="font-semibold">{formatCurrency(site.stats.laborCostCalculated)}</span></div>
+                <div className="info-item"><label>Labor Cost Paid</label><span className="font-semibold text-blue">{formatCurrency(site.stats.laborCostPaid)}</span></div>
+                <div className="info-item"><label>Other Expenses</label><span className="font-semibold text-red">{formatCurrency(site.stats.otherExpenses)}</span></div>
+                <div className="info-item"><label>Estimated Profit</label><span className="font-bold text-primary" style={{ fontSize: '1.2rem' }}>{formatCurrency(site.stats.profit)}</span></div>
                 <div className="info-item" style={{ gridColumn: 'span 2' }}><label>Notes</label><span>{site.notes || '—'}</span></div>
               </div>
             </Card>

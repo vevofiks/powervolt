@@ -12,7 +12,7 @@ import Select from '../components/ui/Select';
 import { workerApi } from '../api/workers';
 import { formatCurrency } from '../utils/formatCurrency';
 import { formatDate } from '../utils/formatDate';
-import { HiOutlinePlus, HiOutlinePencil, HiOutlineSearch, HiOutlineEye, HiOutlineCalendar } from 'react-icons/hi';
+import { HiOutlinePlus, HiOutlinePencil, HiOutlineSearch, HiOutlineEye, HiOutlineCalendar, HiOutlineTrash } from 'react-icons/hi';
 import './Workers.css';
 
 export default function Workers() {
@@ -64,6 +64,17 @@ export default function Workers() {
     setIsModalOpen(true);
   };
 
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this worker? Workers with work entries or salary history cannot be deleted.')) return;
+    try {
+      await workerApi.delete(id);
+      toast.success('Worker deleted successfully');
+      fetchWorkers();
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || 'Failed to delete worker');
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
@@ -112,6 +123,7 @@ export default function Workers() {
       <div className="action-buttons">
         <button className="action-btn primary" onClick={() => navigate(`/admin/workers/${row.id}`)} title="View Ledger"><HiOutlineEye /></button>
         <button className="action-btn" onClick={() => handleEdit(row)} title="Edit"><HiOutlinePencil /></button>
+        <button className="action-btn danger text-red-500 hover:text-red-700 p-1" onClick={() => handleDelete(row.id)} title="Delete"><HiOutlineTrash size={18} /></button>
       </div>
     )},
   ];

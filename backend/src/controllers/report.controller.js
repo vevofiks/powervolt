@@ -20,4 +20,14 @@ const getInventoryReport = async (req, res, next) => {
   }
 };
 
-module.exports = { getProfitLoss, getInventoryReport };
+const getGstReport = async (req, res, next) => {
+  try {
+    const { startDate, endDate } = req.query;
+    const data = await reportService.getGstReport(startDate, endDate);
+    res.json(ApiResponse.success(data));
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { getProfitLoss, getInventoryReport, getGstReport };

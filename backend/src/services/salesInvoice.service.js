@@ -239,6 +239,199 @@ const create = async (data) => {
 };
 
 /**
+ * Update an existing Sales Invoice.
+ * Reverts original stock and ledger entries, processes updated items, and saves changes.
+ */
+const update = async (id, data) => {
+  const originalInvoice = await prisma.salesInvoice.findUnique({
+    where: { id },
+    include: { items: true }
+  });
+  if (!originalInvoice) throw ApiError.notFound('Invoice not found');
+
+  const {
+    invoiceType,
+    invoiceCategory,
+    customerId,
+    customerName,
+    customerPhone,
+    customerGstNumber,
+    customerAddress1,
+    customerAddress2,
+    customerCity,
+    customerState,
+    customerPincode,
+    items,
+    discount,
+    accountId,
+    notes,
+    date,
+    paymentStatus
+  } = data;
+
+  if (!items || items.length === 0) throw ApiError.badRequest('Invoice must have at least one item');
+  if (!accountId) throw ApiError.badRequest('Payment account is required');
+
+  const targetDate = date ? new Date(date) : originalInvoice.date;
+  const invoiceNo = originalInvoice.invoiceNo;
+
+  // 1. Revert Stock for original items
+  for (const item of originalInvoice.items) {
+    if (item.itemType === 'SERVICE' || !item.productId) continue;
+    await stockService.recordMovement({
+      productId: item.productId,
+      type: 'RETURN_IN',
+      quantity: item.qty,
+      reference: invoiceNo,
+      remark: `Reverted stock for edited Invoice ${invoiceNo}`,
+      date: new Date()
+    });
+  }
+
+  // 2. Revert Ledger Transaction if original was PAID
+  if (originalInvoice.paymentStatus === 'PAID') {
+    await ledgerService.recordTransaction({
+      accountId: originalInvoice.accountId,
+      date: new Date(),
+      referenceNo: `REV-${invoiceNo}`,
+      moduleType: 'ADJUSTMENT',
+      description: `Reverted ledger for edited Invoice ${invoiceNo}`,
+      debit: originalInvoice.totalAmount,
+      linkedId: originalInvoice.id
+    });
+  }
+
+  // 3. Delete original items
+  await prisma.salesInvoiceItem.deleteMany({
+    where: { invoiceId: id }
+  });
+
+  // 4. Process new items and calculate totals
+  let subtotal = 0;
+  let taxAmount = 0;
+  let totalProfit = 0;
+  const invoiceItems = [];
+
+  for (const item of items) {
+    const isService = item.itemType === 'SERVICE';
+    let productName = item.productName;
+    let hsnCode = item.hsnCode || '';
+    let purchasePrice = 0;
+
+    if (!isService) {
+      const product = await prisma.product.findUnique({ where: { id: item.productId } });
+      if (!product) throw ApiError.notFound(`Product not found: ${item.productId}`);
+      productName = product.productName;
+      hsnCode = product.hsnCode;
+      purchasePrice = product.purchasePrice;
+    }
+
+    const itemAmount = item.qty * item.rate;
+    const itemTax = itemAmount * 0.18; // 18% GST
+    const itemProfit = (item.rate - purchasePrice) * item.qty;
+
+    subtotal += itemAmount;
+    taxAmount += itemTax;
+    totalProfit += itemProfit;
+
+    invoiceItems.push({
+      productId: isService ? null : item.productId,
+      productName,
+      hsnCode,
+      qty: item.qty,
+      rate: item.rate,
+      purchasePrice,
+      amount: itemAmount,
+      itemType: isService ? 'SERVICE' : 'PRODUCT'
+    });
+
+    if (!isService) {
+      await stockService.recordMovement({
+        productId: item.productId,
+        type: 'SALE_OUT',
+        quantity: item.qty,
+        reference: invoiceNo,
+        remark: `Sale Invoice ${invoiceNo} (Edited)`,
+        date: date || new Date()
+      });
+    }
+  }
+
+  const totalAmount = subtotal + taxAmount - (parseFloat(discount) || 0);
+  const finalPaymentStatus = paymentStatus || 'PENDING';
+
+  // 5. Record new Ledger Transaction if new status is PAID
+  if (finalPaymentStatus === 'PAID') {
+    await ledgerService.recordTransaction({
+      accountId,
+      date: date || new Date(),
+      referenceNo: invoiceNo,
+      moduleType: 'SALES_INVOICE',
+      description: `Sales Invoice ${invoiceNo} (Edited) for ${customerName || 'Walk-in Customer'}`,
+      credit: totalAmount,
+      linkedId: id
+    });
+  }
+
+  // 6. Update Customer Profile
+  let finalCustomerId = customerId;
+  const customerPayload = {
+    name: customerName,
+    phone: customerPhone,
+    gstNumber: customerGstNumber,
+    address1: customerAddress1,
+    address2: customerAddress2,
+    city: customerCity,
+    state: customerState,
+    pincode: customerPincode
+  };
+
+  if (finalCustomerId) {
+    await prisma.customer.update({ where: { id: finalCustomerId }, data: customerPayload });
+  } else if (customerName && customerPhone) {
+    const existing = await prisma.customer.findFirst({ where: { phone: customerPhone } });
+    if (existing) {
+      finalCustomerId = existing.id;
+      await prisma.customer.update({ where: { id: finalCustomerId }, data: customerPayload });
+    } else {
+      const newCustomer = await prisma.customer.create({ data: customerPayload });
+      finalCustomerId = newCustomer.id;
+    }
+  }
+
+  // 7. Save updated Invoice
+  const invoice = await prisma.salesInvoice.update({
+    where: { id },
+    data: {
+      date: targetDate,
+      invoiceType,
+      invoiceCategory: invoiceCategory || 'PRODUCT',
+      customerId: finalCustomerId,
+      customerName,
+      customerPhone,
+      customerGstNumber,
+      customerAddress1,
+      customerAddress2,
+      customerCity,
+      customerState,
+      customerPincode,
+      subtotal,
+      discount: parseFloat(discount) || 0,
+      taxAmount,
+      totalAmount,
+      profit: totalProfit,
+      accountId,
+      notes,
+      paymentStatus: finalPaymentStatus,
+      items: { create: invoiceItems }
+    },
+    include: { items: true }
+  });
+
+  return invoice;
+};
+
+/**
  * Remove an invoice — reverts stock and ledger using sequential direct queries.
  */
 const remove = async (id) => {
@@ -313,4 +506,4 @@ const updatePaymentStatus = async (id, status) => {
   return updated;
 };
 
-module.exports = { getAll, getById, create, remove, updatePaymentStatus };
+module.exports = { getAll, getById, create, update, remove, updatePaymentStatus };

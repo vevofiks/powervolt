@@ -24,7 +24,7 @@ export default function CreateServiceInvoice() {
     invoiceNo: '',
     customerId: '',
     customerName: '',
-    items: [{ description: '', amount: '' }],
+    items: [{ description: '', qty: '', rate: '', amount: '' }],
     accountId: '',
     notes: '',
     date: new Date().toISOString().split('T')[0]
@@ -72,12 +72,15 @@ export default function CreateServiceInvoice() {
   const addItem = () => {
     setInvoice(prev => ({
       ...prev,
-      items: [...prev.items, { description: '', amount: '' }]
+      items: [...prev.items, { description: '', qty: '', rate: '', amount: '' }]
     }));
   };
 
   const removeItem = (index) => {
     if (invoice.items.length === 1) return;
+    const item = invoice.items[index];
+    const hasContent = item.description?.trim() || item.qty || item.rate || item.amount;
+    if (hasContent && !window.confirm('Are you sure you want to remove this item?')) return;
     const newItems = invoice.items.filter((_, i) => i !== index);
     setInvoice(prev => ({ ...prev, items: newItems }));
   };
@@ -85,6 +88,19 @@ export default function CreateServiceInvoice() {
   const updateItem = (index, field, value) => {
     const newItems = [...invoice.items];
     newItems[index][field] = value;
+
+    // Automatically calculate amount if qty and rate are entered
+    if (field === 'qty' || field === 'rate') {
+      const qtyVal = newItems[index].qty;
+      const rateVal = newItems[index].rate;
+      if (qtyVal !== '' && rateVal !== '') {
+        const qty = parseFloat(qtyVal);
+        const rate = parseFloat(rateVal);
+        if (!isNaN(qty) && !isNaN(rate)) {
+          newItems[index].amount = String((qty * rate).toFixed(2));
+        }
+      }
+    }
     setInvoice(prev => ({ ...prev, items: newItems }));
   };
 
@@ -154,26 +170,53 @@ export default function CreateServiceInvoice() {
             <table className="items-table">
               <thead>
                 <tr>
+                  <th width="60" className="text-center">No</th>
                   <th>Description of Work</th>
-                  <th width="200">Amount (₹) *</th>
-                  <th width="60"></th>
+                  <th width="120">Qty</th>
+                  <th width="150">Rate (₹)</th>
+                  <th width="180">Amount (₹) *</th>
+                  <th width="50"></th>
                 </tr>
               </thead>
               <tbody>
                 {invoice.items.map((item, index) => (
                   <tr key={index}>
+                    <td className="text-center" style={{ verticalAlign: 'middle', fontWeight: '600' }}>
+                      {index + 1}
+                    </td>
                     <td>
-                      <Input
-                        placeholder="e.g., Light work, Extruder work"
+                      <textarea
+                        className="item-input"
+                        placeholder="e.g., Light work&#10;- Conver work&#10;Total work 8"
                         value={item.description}
                         onChange={(e) => updateItem(index, 'description', e.target.value)}
                         required
+                        rows={3}
+                        style={{ resize: 'vertical', minHeight: '60px', padding: '8px 12px', width: '100%', borderRadius: '6px' }}
+                      />
+                    </td>
+                    <td>
+                      <Input
+                        type="number"
+                        placeholder="Qty"
+                        value={item.qty || ''}
+                        onChange={(e) => updateItem(index, 'qty', e.target.value)}
                       />
                     </td>
                     <td>
                       <Input
                         type="number"
                         step="0.01"
+                        placeholder="Rate"
+                        value={item.rate || ''}
+                        onChange={(e) => updateItem(index, 'rate', e.target.value)}
+                      />
+                    </td>
+                    <td>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        placeholder="Amount"
                         value={item.amount}
                         onChange={(e) => updateItem(index, 'amount', e.target.value)}
                         required

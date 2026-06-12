@@ -190,6 +190,9 @@ export default function CreatePurchaseBill() {
 
   const removeItem = (index) => {
     if (bill.items.length === 1) return;
+    const item = bill.items[index];
+    const hasContent = item.productName?.trim() || item.qty > 1 || item.purchasePrice > 0 || item.amount > 0;
+    if (hasContent && !window.confirm('Are you sure you want to remove this item?')) return;
     const newItems = bill.items.filter((_, i) => i !== index);
     setBill(prev => ({ ...prev, items: newItems }));
   };

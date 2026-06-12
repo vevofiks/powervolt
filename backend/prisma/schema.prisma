@@ -314,8 +314,9 @@ model Expense {
   id         String   @id @default(uuid())
   date       DateTime @default(now())
   title      String
-  category   String // FUEL, TRAVEL, MATERIALS, SITE_EXPENSE, OFFICE, FOOD, MISC
+  category   String // FUEL, TRAVEL, MATERIALS, SITE_EXPENSE, OFFICE, FOOD, MISC, SALARY_PAYMENT
   amount     Float
+  gstPaid    Float    @default(0)
   payee      String?
   reference  String? // Bill No, Receipt No
   notes      String?
@@ -326,6 +327,11 @@ model Expense {
 
   workSiteId String?
   workSite   WorkSite? @relation(fields: [workSiteId], references: [id])
+
+  workerId String?
+  worker   Worker? @relation(fields: [workerId], references: [id])
+
+  salaryPayment SalaryPayment?
 
   items ExpenseItem[]
 
@@ -391,6 +397,7 @@ model Worker {
   allowances  WorkerAllowance[]
   deductions  WorkerDeduction[]
   payments    SalaryPayment[]
+  expenses    Expense[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -479,6 +486,9 @@ model SalaryPayment {
   notes     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  expenseId String?  @unique
+  expense   Expense? @relation(fields: [expenseId], references: [id], onDelete: Cascade)
 
   @@index([workerId])
   @@index([date])

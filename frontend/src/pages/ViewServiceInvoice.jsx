@@ -68,33 +68,40 @@ export default function ViewServiceInvoice() {
 
       <div className="service-invoice-preview-container">
         <div className="service-invoice-print-area" ref={printRef}>
-          <div className="si-header-container">
-            <div className="si-header-title">INVOICE</div>
-            <div className="si-header-meta">
-              <div><strong>Invoice No:</strong> {invoice.invoiceNo}</div>
-              <div><strong>Date:</strong> {formatDate(invoice.date)}</div>
-            </div>
-          </div>
+          <div className="si-header-title-centered">INVOICE</div>
 
-          <div className="si-bill-to-section">
-            <div className="si-section-title">BILL TO</div>
-            <div className="si-customer-name">{invoice.customerName}</div>
+          <div className="si-meta-row">
+            <div className="si-bill-to-section">
+              <div className="si-bill-to-title">BILL TO :</div>
+              <div className="si-customer-name">{invoice.customerName}</div>
+            </div>
+
+            <div className="si-header-meta-right">
+              <div><strong>Invoice Date :</strong> {formatDate(invoice.date)}</div>
+              <div><strong>INVOICE NO :</strong> {invoice.invoiceNo}</div>
+            </div>
           </div>
 
           <div className="si-table-container">
             <table className="si-modern-table">
               <thead>
                 <tr>
-                  <th className="text-center w-12">#</th>
-                  <th className="text-left">Description of Service</th>
-                  <th className="text-right w-32">Amount</th>
+                  <th className="text-center w-16">NO</th>
+                  <th className="text-left">DESCRIPTION</th>
+                  <th className="text-center w-24">Qty</th>
+                  <th className="text-right w-32">Rate</th>
+                  <th className="text-right w-36">AMOUNT</th>
                 </tr>
               </thead>
               <tbody>
                 {invoice.items.map((item, idx) => (
                   <tr key={idx}>
                     <td className="text-center">{idx + 1}</td>
-                    <td className="text-left">{item.description}</td>
+                    <td className="text-left" style={{ whiteSpace: 'pre-wrap' }}>{item.description}</td>
+                    <td className="text-center">{item.qty !== null && item.qty !== undefined ? item.qty : ''}</td>
+                    <td className="text-right">
+                      {item.rate !== null && item.rate !== undefined ? `₹ ${item.rate.toFixed(2)}` : ''}
+                    </td>
                     <td className="text-right font-medium">₹ {item.amount.toFixed(2)}</td>
                   </tr>
                 ))}

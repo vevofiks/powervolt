@@ -14,7 +14,7 @@ import { customerApi } from '../api/customers';
 import { workerApi } from '../api/workers';
 import { formatDate } from '../utils/formatDate';
 import { formatCurrency } from '../utils/formatCurrency';
-import { HiOutlinePlus, HiOutlinePencil, HiOutlineSearch, HiOutlineEye, HiOutlineUserAdd, HiOutlineUsers } from 'react-icons/hi';
+import { HiOutlinePlus, HiOutlinePencil, HiOutlineSearch, HiOutlineEye, HiOutlineUserAdd, HiOutlineUsers, HiOutlineTrash } from 'react-icons/hi';
 import './WorkSites.css';
 
 const STATUS_OPTIONS = [
@@ -83,6 +83,17 @@ export default function WorkSites() {
       notes: site.notes || ''
     });
     setIsModalOpen(true);
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this work site? All associated work entries will be deleted.')) return;
+    try {
+      await workSiteApi.delete(id);
+      toast.success('Work site deleted successfully');
+      fetchSites();
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || 'Failed to delete work site');
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -190,6 +201,7 @@ export default function WorkSites() {
         <button className="action-btn primary" onClick={() => navigate(`/admin/work-sites/${row.id}`)} title="View Details"><HiOutlineEye /></button>
         <button className="action-btn text-blue" onClick={() => openManageWorkers(row)} title="Assign Staff"><HiOutlineUserAdd /></button>
         <button className="action-btn" onClick={() => handleEdit(row)} title="Edit"><HiOutlinePencil /></button>
+        <button className="action-btn danger text-red-500 hover:text-red-700 p-1" onClick={() => handleDelete(row.id)} title="Delete"><HiOutlineTrash size={18} /></button>
       </div>
     )},
   ];

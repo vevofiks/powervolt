@@ -87,6 +87,32 @@ export default function Dashboard() {
         })}
       </div>
 
+      <h3 className="dashboard__section-title" style={{ marginTop: '2rem', marginBottom: '1rem', paddingLeft: '0.25rem' }}>Financial Health Overview (All-Time)</h3>
+      <div className="dashboard__stats" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
+        {[
+          { label: 'Total Revenue', value: formatCurrency(summary.totalRevenue), icon: HiOutlineTrendingUp, color: 'green' },
+          { label: 'Total Expenses', value: formatCurrency(summary.totalExpenses), icon: HiOutlineTrendingDown, color: 'red' },
+          { label: 'Net Profit', value: formatCurrency(summary.netProfit), icon: HiOutlineCurrencyRupee, color: summary.netProfit >= 0 ? 'green' : 'red' },
+          { label: 'Salary Payable', value: formatCurrency(summary.salaryPayable), icon: HiOutlineCurrencyRupee, color: 'orange' },
+          { label: 'Salary Paid', value: formatCurrency(summary.salaryPaid), icon: HiOutlineCurrencyRupee, color: 'blue' },
+          { label: 'GST Collected', value: formatCurrency(summary.gstCollected), icon: HiOutlineTrendingUp, color: 'green' },
+          { label: 'GST Paid', value: formatCurrency(summary.gstPaid), icon: HiOutlineTrendingDown, color: 'orange' }
+        ].map((stat) => {
+          const Icon = stat.icon;
+          return (
+            <Card key={stat.label} className="dashboard__stat-card" style={{ padding: '1rem' }}>
+              <div className="dashboard__stat-content">
+                <span className="dashboard__stat-label" style={{ fontSize: '0.8rem' }}>{stat.label}</span>
+                <span className="dashboard__stat-value" style={{ fontSize: '1.25rem' }}>{stat.value}</span>
+              </div>
+              <div className={`dashboard__stat-icon dashboard__stat-icon--${stat.color}`} style={{ width: '40px', height: '40px', fontSize: '1.25rem' }}>
+                <Icon />
+              </div>
+            </Card>
+          );
+        })}
+      </div>
+
 
 
       <div className="dashboard__grid">

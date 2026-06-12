@@ -8,8 +8,7 @@ const calculateDraft = catchAsync(async (req, res) => {
 });
 
 const paySalary = catchAsync(async (req, res) => {
-  const result = await salaryService.processPayment(req.body);
-  res.status(201).json({ success: true, data: result });
+  throw ApiError.badRequest('Direct salary payments are disabled. Please make salary payments through the Expense Management module.');
 });
 
 const getLedger = catchAsync(async (req, res) => {

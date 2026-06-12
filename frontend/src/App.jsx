@@ -44,6 +44,7 @@ export default function App() {
               <Route index element={<Dashboard />} />
               <Route path="sales-invoice" element={<SalesInvoice />} />
               <Route path="sales-invoice/create" element={<CreateSalesInvoice />} />
+              <Route path="sales-invoice/edit/:id" element={<CreateSalesInvoice />} />
               <Route path="service-invoice" element={<ServiceInvoices />} />
               <Route path="service-invoice/create" element={<CreateServiceInvoice />} />
               <Route path="service-invoice/:id" element={<ViewServiceInvoice />} />

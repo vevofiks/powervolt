@@ -9,20 +9,16 @@ import Select from '../components/ui/Select';
 import Input from '../components/ui/Input';
 import { workerApi } from '../api/workers';
 import { salaryApi } from '../api/salary';
-import { accountApi } from '../api/accounts';
 import { formatCurrency } from '../utils/formatCurrency';
 import { formatDate } from '../utils/formatDate';
 import {
-  HiOutlineCurrencyRupee, HiOutlineRefresh, HiOutlineCheckCircle,
+  HiOutlineRefresh,
   HiOutlinePlusCircle, HiOutlineMinusCircle, HiOutlineChevronDown, HiOutlineChevronRight
 } from 'react-icons/hi';
 import './Salary.css';
 
-function WorkerSalaryRow({ row, accounts, onPay, onAllowance, onDeduction }) {
+function WorkerSalaryRow({ row, onAllowance, onDeduction }) {
   const [open, setOpen] = useState(false);
-  const [isSitePayOpen, setIsSitePayOpen] = useState(false);
-  const [sitePayData, setSitePayData] = useState({ siteName: '', amount: 0, accountId: accounts[0]?.id || '', notes: '' });
-  const [siteSubmitting, setSiteSubmitting] = useState(false);
 
   // Group work entries by site
   const entriesBySite = {};
@@ -33,35 +29,34 @@ function WorkerSalaryRow({ row, accounts, onPay, onAllowance, onDeduction }) {
   });
 
   const workTypeLabelMap = {
-    FULL_DAY: '1 Day', HALF_DAY: 'Half Day',
-    ONE_AND_HALF_DAY: '1.5 Days', TWO_DAYS: '2 Days'
+    FULL_DAY: '1 Day',
+    HALF_DAY: 'Half Day',
+    ONE_AND_HALF_DAY: '1.5 Days',
+    TWO_DAYS: '2 Days'
   };
 
-  const handleSitePayOpen = (siteName, entries) => {
-    const siteTotal = entries.reduce((s, e) => s + e.amount, 0);
-    setSitePayData({ siteName, amount: siteTotal, accountId: accounts[0]?.id || '', notes: `Payment for ${siteName}` });
-    setIsSitePayOpen(true);
-  };
+  const workedDays = row.details?.workEntries?.length || 0;
+  const grossEarnings = row.totalEarnings || 0;
+  const allowances = row.totalAllowances || 0;
+  const deductions = row.totalDeductions || 0;
+  const netSalaryPayable = grossEarnings + allowances - deductions;
+  const totalPaid = row.totalPaid || 0;
+  const pendingSalary = Math.max(0, netSalaryPayable - totalPaid);
 
-  const handleSiteSettle = async (e) => {
-    e.preventDefault();
-    setSiteSubmitting(true);
-    try {
-      await salaryApi.paySalary({
-        workerId: row.workerId || row.id,
-        amount: sitePayData.amount,
-        accountId: sitePayData.accountId,
-        notes: sitePayData.notes
-      });
-      toast.success(`Payment settled for ${sitePayData.siteName}`);
-      setIsSitePayOpen(false);
-      onPay(null); // trigger refresh via parent's generateSheet
-    } catch (err) {
-      toast.error(err.message || 'Payment failed');
-    } finally {
-      setSiteSubmitting(false);
+  let status = 'Unpaid';
+  let statusVariant = 'danger';
+  if (totalPaid > 0) {
+    if (pendingSalary <= 0) {
+      status = 'Fully Paid';
+      statusVariant = 'success';
+    } else {
+      status = 'Partially Paid';
+      statusVariant = 'warning';
     }
-  };
+  } else if (netSalaryPayable <= 0) {
+    status = 'Fully Paid';
+    statusVariant = 'success';
+  }
 
   return (
     <>
@@ -77,27 +72,27 @@ function WorkerSalaryRow({ row, accounts, onPay, onAllowance, onDeduction }) {
             <span className="text-xs text-muted">{row.role}</span>
           </div>
         </td>
-        <td className="text-right">{formatCurrency(row.totalEarnings)}</td>
-        <td className="text-right text-green">+{formatCurrency(row.totalAllowances)}</td>
-        <td className="text-right text-red">-{formatCurrency(row.totalDeductions)}</td>
-        <td className="text-right text-blue">-{formatCurrency(row.totalPaid)}</td>
-        <td className="text-right">
-          <span className={`font-bold ${row.netPayable > 0 ? 'text-primary' : ''}`}>
-            {formatCurrency(row.netPayable)}
-          </span>
+        <td className="text-center font-medium">{workedDays}</td>
+        <td className="text-right">{formatCurrency(grossEarnings)}</td>
+        <td className="text-right text-green">+{formatCurrency(allowances)}</td>
+        <td className="text-right text-red">-{formatCurrency(deductions)}</td>
+        <td className="text-right font-semibold">{formatCurrency(netSalaryPayable)}</td>
+        <td className="text-right text-blue">{formatCurrency(totalPaid)}</td>
+        <td className="text-right font-bold text-primary">{formatCurrency(pendingSalary)}</td>
+        <td className="text-center">
+          <Badge variant={statusVariant}>{status}</Badge>
         </td>
         <td>
           <div className="action-buttons">
             <button className="action-btn text-green" onClick={() => onAllowance(row)} title="Add Allowance"><HiOutlinePlusCircle /></button>
             <button className="action-btn text-red" onClick={() => onDeduction(row)} title="Add Deduction"><HiOutlineMinusCircle /></button>
-            <Button size="sm" disabled={row.netPayable <= 0} onClick={() => onPay(row)} icon={HiOutlineCheckCircle}>Pay</Button>
           </div>
         </td>
       </tr>
 
       {open && (
         <tr className="salary-detail-row">
-          <td colSpan={8} className="detail-cell">
+          <td colSpan={11} className="detail-cell">
             <div className="site-breakdown">
               {Object.keys(entriesBySite).length === 0 ? (
                 <p className="no-entries">No work entries in this period.</p>
@@ -111,7 +106,6 @@ function WorkerSalaryRow({ row, accounts, onPay, onAllowance, onDeduction }) {
                       entries={entries}
                       siteTotal={siteTotal}
                       workTypeLabelMap={workTypeLabelMap}
-                      onPaySite={() => handleSitePayOpen(siteName, entries)}
                     />
                   );
                 })
@@ -121,7 +115,7 @@ function WorkerSalaryRow({ row, accounts, onPay, onAllowance, onDeduction }) {
               {(row.details?.allowances || []).length > 0 && (
                 <div className="breakdown-section">
                   <div className="breakdown-header allowance-header">
-                    <span>Allowances</span>
+                    <span>Allowances Details</span>
                     <span>+{formatCurrency(row.totalAllowances)}</span>
                   </div>
                   <table className="breakdown-table">
@@ -144,7 +138,7 @@ function WorkerSalaryRow({ row, accounts, onPay, onAllowance, onDeduction }) {
               {(row.details?.deductions || []).length > 0 && (
                 <div className="breakdown-section">
                   <div className="breakdown-header deduction-header">
-                    <span>Deductions</span>
+                    <span>Deductions Details</span>
                     <span>-{formatCurrency(row.totalDeductions)}</span>
                   </div>
                   <table className="breakdown-table">
@@ -167,7 +161,7 @@ function WorkerSalaryRow({ row, accounts, onPay, onAllowance, onDeduction }) {
               {(row.details?.payments || []).length > 0 && (
                 <div className="breakdown-section">
                   <div className="breakdown-header payment-header">
-                    <span>Payments Made</span>
+                    <span>Salary Payments History</span>
                     <span>-{formatCurrency(row.totalPaid)}</span>
                   </div>
                   <table className="breakdown-table">
@@ -188,45 +182,11 @@ function WorkerSalaryRow({ row, accounts, onPay, onAllowance, onDeduction }) {
           </td>
         </tr>
       )}
-
-      {/* Site-specific Payment Modal */}
-      <Modal isOpen={isSitePayOpen} onClose={() => setIsSitePayOpen(false)} title={`Settle: ${sitePayData.siteName}`}>
-        <form onSubmit={handleSiteSettle} className="pay-form">
-          <div className="pay-summary">
-            <div className="pay-row"><span>Worker:</span><strong>{row.name}</strong></div>
-            <div className="pay-row"><span>Site:</span><strong>{sitePayData.siteName}</strong></div>
-            <div className="pay-row highlight"><span>Site Earnings:</span><strong>{formatCurrency(sitePayData.amount)}</strong></div>
-          </div>
-          <Input
-            label="Amount (₹) *"
-            type="number"
-            required
-            value={sitePayData.amount}
-            onChange={e => setSitePayData(prev => ({ ...prev, amount: parseFloat(e.target.value) || 0 }))}
-          />
-          <Select
-            label="Pay From Account *"
-            required
-            value={sitePayData.accountId}
-            onChange={e => setSitePayData(prev => ({ ...prev, accountId: e.target.value }))}
-            options={accounts.map(acc => ({ value: acc.id, label: `${acc.accountName} (₹${acc.currentBalance})` }))}
-          />
-          <Input
-            label="Notes"
-            value={sitePayData.notes}
-            onChange={e => setSitePayData(prev => ({ ...prev, notes: e.target.value }))}
-          />
-          <div className="modal-actions">
-            <Button type="button" variant="secondary" onClick={() => setIsSitePayOpen(false)}>Cancel</Button>
-            <Button type="submit" loading={siteSubmitting} icon={HiOutlineCheckCircle}>Confirm Settlement</Button>
-          </div>
-        </form>
-      </Modal>
     </>
   );
 }
 
-function SiteSection({ siteName, entries, siteTotal, workTypeLabelMap, onPaySite }) {
+function SiteSection({ siteName, entries, siteTotal, workTypeLabelMap }) {
   const [open, setOpen] = useState(true);
 
   return (
@@ -237,14 +197,7 @@ function SiteSection({ siteName, entries, siteTotal, workTypeLabelMap, onPaySite
           {siteName}
         </span>
         <span className="site-header-right">
-          <span style={{ marginRight: 12 }}>{formatCurrency(siteTotal)}</span>
-          <button
-            className="site-settle-btn"
-            onClick={e => { e.stopPropagation(); onPaySite(); }}
-            title={`Settle payment for ${siteName}`}
-          >
-            <HiOutlineCheckCircle /> Settle
-          </button>
+          <span>{formatCurrency(siteTotal)}</span>
         </span>
       </div>
       {open && (
@@ -270,12 +223,10 @@ function SiteSection({ siteName, entries, siteTotal, workTypeLabelMap, onPaySite
 
 export default function Salary() {
   const [workers, setWorkers] = useState([]);
-  const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [salarySheet, setSalarySheet] = useState([]);
 
-  const [isPayModalOpen, setIsPayModalOpen] = useState(false);
   const [isActionModalOpen, setIsActionModalOpen] = useState(false);
   const [actionType, setActionType] = useState('ALLOWANCE');
   const [selectedWorker, setSelectedWorker] = useState(null);
@@ -285,23 +236,15 @@ export default function Salary() {
     endDate: new Date().toISOString().split('T')[0]
   });
 
-  const [paymentData, setPaymentData] = useState({ accountId: '', notes: '' });
   const [actionData, setActionData] = useState({ type: '', amount: '', remark: '', date: new Date().toISOString().split('T')[0] });
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const [workerRes, accRes] = await Promise.all([
-        workerApi.getAll({ isActive: 'true' }),
-        accountApi.getAll()
-      ]);
+      const workerRes = await workerApi.getAll({ isActive: 'true' });
       setWorkers(workerRes.data?.items || []);
-      setAccounts(accRes.data?.items || []);
-      if (accRes.data?.items?.length > 0) {
-        setPaymentData(prev => ({ ...prev, accountId: accRes.data.items[0].id }));
-      }
     } catch (err) {
-      toast.error('Failed to load data');
+      toast.error('Failed to load workers');
     } finally {
       setLoading(false);
     }
@@ -332,26 +275,6 @@ export default function Salary() {
   useEffect(() => { fetchData(); }, [fetchData]);
   useEffect(() => { if (workers.length > 0) generateSheet(); }, [workers, generateSheet]);
 
-  const handlePayment = async (e) => {
-    e.preventDefault();
-    setSubmitting(true);
-    try {
-      await salaryApi.paySalary({
-        workerId: selectedWorker.workerId,
-        amount: selectedWorker.netPayable,
-        accountId: paymentData.accountId,
-        notes: paymentData.notes
-      });
-      toast.success(`Salary paid to ${selectedWorker.name}`);
-      setIsPayModalOpen(false);
-      generateSheet();
-    } catch (err) {
-      toast.error(err.message || 'Payment failed');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
   const handleAction = async (e) => {
     e.preventDefault();
     setSubmitting(true);
@@ -372,9 +295,9 @@ export default function Salary() {
   return (
     <div className="page-wrapper salary-page">
       <PageHeader
-        title="Payroll Management"
-        subtitle="Review earnings by site, adjust allowances/deductions, and settle payments"
-        actionLabel="Refresh Data"
+        title="Payroll Calculation"
+        subtitle="Review earnings, allowances, deductions, and track pending salaries"
+        actionLabel="Refresh Calculations"
         actionIcon={HiOutlineRefresh}
         onAction={generateSheet}
       />
@@ -400,12 +323,15 @@ export default function Salary() {
               <thead>
                 <tr>
                   <th style={{ width: 36 }}></th>
-                  <th>Worker</th>
-                  <th className="text-right">Earnings</th>
+                  <th>Worker Name</th>
+                  <th className="text-center">Worked Days</th>
+                  <th className="text-right">Gross Earnings</th>
                   <th className="text-right">Allowances</th>
                   <th className="text-right">Deductions</th>
-                  <th className="text-right">Paid</th>
-                  <th className="text-right">Balance</th>
+                  <th className="text-right">Net Payable</th>
+                  <th className="text-right">Total Paid</th>
+                  <th className="text-right">Pending Salary</th>
+                  <th className="text-center">Status</th>
                   <th className="text-right">Actions</th>
                 </tr>
               </thead>
@@ -414,8 +340,6 @@ export default function Salary() {
                   <WorkerSalaryRow
                     key={row.id}
                     row={row}
-                    accounts={accounts}
-                    onPay={(r) => { setSelectedWorker(r); setIsPayModalOpen(true); }}
                     onAllowance={(r) => { setActionType('ALLOWANCE'); setSelectedWorker(r); setActionData({ type: 'TRAVEL', amount: '', remark: '', date: new Date().toISOString().split('T')[0] }); setIsActionModalOpen(true); }}
                     onDeduction={(r) => { setActionType('DEDUCTION'); setSelectedWorker(r); setActionData({ type: 'ADVANCE', amount: '', remark: '', date: new Date().toISOString().split('T')[0] }); setIsActionModalOpen(true); }}
                   />
@@ -425,30 +349,6 @@ export default function Salary() {
           </div>
         )}
       </Card>
-
-      {/* Payment Modal */}
-      <Modal isOpen={isPayModalOpen} onClose={() => setIsPayModalOpen(false)} title="Settle Weekly Payment">
-        {selectedWorker && (
-          <form onSubmit={handlePayment} className="pay-form">
-            <div className="pay-summary">
-              <div className="pay-row"><span>Worker:</span> <strong>{selectedWorker.name}</strong></div>
-              <div className="pay-row highlight"><span>Net Amount:</span> <strong>{formatCurrency(selectedWorker.netPayable)}</strong></div>
-            </div>
-            <Select
-              label="Pay From Account *"
-              required
-              value={paymentData.accountId}
-              onChange={e => setPaymentData({ ...paymentData, accountId: e.target.value })}
-              options={accounts.map(acc => ({ value: acc.id, label: `${acc.accountName} (₹${acc.currentBalance})` }))}
-            />
-            <Input label="Notes" value={paymentData.notes} onChange={e => setPaymentData({ ...paymentData, notes: e.target.value })} />
-            <div className="modal-actions">
-              <Button type="button" variant="secondary" onClick={() => setIsPayModalOpen(false)}>Cancel</Button>
-              <Button type="submit" loading={submitting}>Mark as Settled</Button>
-            </div>
-          </form>
-        )}
-      </Modal>
 
       {/* Allowance/Deduction Modal */}
       <Modal isOpen={isActionModalOpen} onClose={() => setIsActionModalOpen(false)} title={`Add ${actionType}`}>

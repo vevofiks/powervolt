@@ -43,6 +43,8 @@ class ServiceInvoiceService {
         items: {
           create: items.map(i => ({
             description: i.description,
+            qty: i.qty !== undefined && i.qty !== null && i.qty !== '' ? parseFloat(i.qty) : null,
+            rate: i.rate !== undefined && i.rate !== null && i.rate !== '' ? parseFloat(i.rate) : null,
             amount: parseFloat(i.amount),
           }))
         }
@@ -140,6 +142,25 @@ class ServiceInvoiceService {
     }
 
     return updated;
+  }
+
+  async remove(id) {
+    const invoice = await prisma.serviceInvoice.findUnique({ where: { id } });
+    if (!invoice) throw new ApiError(404, 'Service Invoice not found');
+
+    if (invoice.paymentStatus === 'PAID') {
+      await prisma.account.update({
+        where: { id: invoice.accountId },
+        data: { currentBalance: { decrement: invoice.totalAmount } }
+      });
+    }
+
+    await prisma.ledgerTransaction.deleteMany({
+      where: { linkedId: invoice.id }
+    });
+
+    await prisma.serviceInvoice.delete({ where: { id } });
+    return true;
   }
 }
 

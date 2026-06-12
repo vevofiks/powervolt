@@ -133,10 +133,10 @@ const getWorkerLedger = async (workerId) => {
   const balance = totalEarned - totalDeductions - totalPaid;
 
   const history = [
-    ...workEntries.map(e => ({ type: 'EARNING', category: 'Site Work', ...e })),
-    ...allowances.map(a => ({ type: 'EARNING', category: 'Allowance', ...a })),
-    ...deductions.map(d => ({ type: 'DEDUCTION', category: 'Deduction', ...d })),
-    ...payments.map(p => ({ type: 'PAYMENT', category: 'Salary Payment', ...p }))
+    ...workEntries.map(e => ({ ...e, type: 'EARNING', category: 'Site Work' })),
+    ...allowances.map(a => ({ ...a, type: 'EARNING', category: 'Allowance', allowanceType: a.type })),
+    ...deductions.map(d => ({ ...d, type: 'DEDUCTION', category: 'Deduction', deductionType: d.type })),
+    ...payments.map(p => ({ ...p, type: 'PAYMENT', category: 'Salary Payment' }))
   ].sort((a, b) => new Date(b.date) - new Date(a.date));
 
   return {

@@ -9,7 +9,7 @@ import Modal from '../components/ui/Modal';
 import { salesInvoiceApi } from '../api/salesInvoices';
 import { formatCurrency } from '../utils/formatCurrency';
 import { formatDate } from '../utils/formatDate';
-import { HiOutlinePlus, HiOutlinePrinter, HiOutlineTrash, HiOutlineSearch, HiOutlineChat } from 'react-icons/hi';
+import { HiOutlinePlus, HiOutlinePrinter, HiOutlineTrash, HiOutlineSearch, HiOutlineChat, HiOutlinePencil } from 'react-icons/hi';
 import InvoicePrint from '../components/sales/InvoicePrint';
 import './SalesInvoice.css';
 
@@ -96,6 +96,7 @@ export default function SalesInvoice() {
     { key: 'id', label: 'Actions', render: (_, row) => (
       <div className="action-buttons">
         <button className="action-btn" title="View/Print" onClick={() => handlePrint(row)}><HiOutlinePrinter /></button>
+        <button className="action-btn" title="Edit" onClick={() => navigate(`/admin/sales-invoice/edit/${row.id}`)}><HiOutlinePencil /></button>
         <button className="action-btn" title="WhatsApp Share" onClick={() => handleWhatsApp(row)}><HiOutlineChat /></button>
         <button className="action-btn danger" title="Delete" onClick={() => handleDelete(row.id)}><HiOutlineTrash /></button>
       </div>

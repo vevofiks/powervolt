@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/ui/PageHeader';
 import Card from '../components/ui/Card';
@@ -19,7 +19,10 @@ import { HiOutlinePlus, HiOutlineTrash, HiOutlineSave, HiOutlineArrowLeft, HiOut
 import './CreateSalesInvoice.css';
 
 export default function CreateSalesInvoice() {
+  const { id } = useParams();
   const navigate = useNavigate();
+  const isEditMode = !!id;
+
   const [loading, setLoading] = useState(false);
   const [accounts, setAccounts] = useState([]);
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
@@ -42,11 +45,13 @@ export default function CreateSalesInvoice() {
     discount: 0,
     accountId: '',
     notes: '',
-    date: new Date().toISOString().split('T')[0]
+    date: new Date().toISOString().split('T')[0],
+    paymentStatus: 'PENDING'
   });
 
-  // Load draft on mount
+  // Load draft on mount (only for new invoices)
   useEffect(() => {
+    if (isEditMode) return;
     const savedDraft = localStorage.getItem('salesInvoiceDraft');
     if (savedDraft) {
       try {
@@ -60,30 +65,69 @@ export default function CreateSalesInvoice() {
         localStorage.removeItem('salesInvoiceDraft');
       }
     }
-  }, []);
+  }, [isEditMode]);
 
-  // Auto-save draft when invoice changes
+  // Auto-save draft when invoice changes (only for new invoices)
   useEffect(() => {
+    if (isEditMode) return;
     if (invoice.customerName || invoice.items.some(i => i.productName)) {
       localStorage.setItem('salesInvoiceDraft', JSON.stringify(invoice));
     }
-  }, [invoice]);
+  }, [invoice, isEditMode]);
 
-  useEffect(() => {
-    fetchAccounts();
-  }, []);
-
-  const fetchAccounts = async () => {
+  const initData = useCallback(async () => {
+    setLoading(true);
     try {
-      const res = await accountApi.getAll();
-      setAccounts(res.data?.items || []);
-      if (res.data?.items?.length > 0) {
-        setInvoice(prev => ({ ...prev, accountId: res.data.items[0].id }));
+      const accountsRes = await accountApi.getAll();
+      const accountsList = accountsRes.data?.items || [];
+      setAccounts(accountsList);
+
+      if (isEditMode) {
+        const invoiceRes = await salesInvoiceApi.getById(id);
+        const invData = invoiceRes.data;
+        setInvoice({
+          invoiceType: invData.invoiceType || 'GST',
+          customerId: invData.customerId || '',
+          customerName: invData.customerName || '',
+          customerPhone: invData.customerPhone || '',
+          customerGstNumber: invData.customerGstNumber || '',
+          customerAddress1: invData.customerAddress1 || '',
+          customerAddress2: invData.customerAddress2 || '',
+          customerCity: invData.customerCity || '',
+          customerState: invData.customerState || '',
+          customerPincode: invData.customerPincode || '',
+          items: invData.items.map(item => ({
+            id: item.id,
+            itemType: item.itemType || 'PRODUCT',
+            productId: item.productId || '',
+            productName: item.productName || '',
+            hsnCode: item.hsnCode || '',
+            qty: item.qty || 1,
+            rate: item.rate || 0,
+            amount: item.amount || 0
+          })),
+          discount: invData.discount || 0,
+          accountId: invData.accountId || '',
+          notes: invData.notes || '',
+          date: new Date(invData.date).toISOString().split('T')[0],
+          paymentStatus: invData.paymentStatus || 'PENDING'
+        });
+      } else {
+        if (accountsList.length > 0) {
+          setInvoice(prev => ({ ...prev, accountId: accountsList[0].id }));
+        }
       }
     } catch (err) {
-      toast.error('Failed to load accounts');
+      toast.error('Failed to load required details');
+      navigate('/admin/sales-invoice');
+    } finally {
+      setLoading(false);
     }
-  };
+  }, [id, isEditMode, navigate]);
+
+  useEffect(() => {
+    initData();
+  }, [initData]);
 
   // ─── Customer Selection ───────────────────────────────────────
   const handleCustomerInputChange = (val) => {
@@ -205,6 +249,9 @@ export default function CreateSalesInvoice() {
 
   const removeItem = (index) => {
     if (invoice.items.length === 1) return;
+    const item = invoice.items[index];
+    const hasContent = item.productName?.trim() || item.qty > 1 || item.rate > 0 || item.amount > 0;
+    if (hasContent && !window.confirm('Are you sure you want to remove this item?')) return;
     const newItems = invoice.items.filter((_, i) => i !== index);
     setInvoice(prev => ({ ...prev, items: newItems }));
   };
@@ -220,7 +267,6 @@ export default function CreateSalesInvoice() {
 
   // Calculations
   const subtotal = invoice.items.reduce((sum, item) => sum + (parseFloat(item.amount) || 0), 0);
-  // Fixed GST: 9% CGST + 9% SGST = 18% total
   const taxAmount = subtotal * 0.18;
   const totalAmount = subtotal + taxAmount - (parseFloat(invoice.discount) || 0);
 
@@ -242,12 +288,17 @@ export default function CreateSalesInvoice() {
 
     setLoading(true);
     try {
-      await salesInvoiceApi.create(invoice);
-      toast.success('Invoice created successfully');
-      localStorage.removeItem('salesInvoiceDraft');
+      if (isEditMode) {
+        await salesInvoiceApi.update(id, invoice);
+        toast.success('Invoice updated successfully');
+      } else {
+        await salesInvoiceApi.create(invoice);
+        toast.success('Invoice created successfully');
+        localStorage.removeItem('salesInvoiceDraft');
+      }
       navigate('/admin/sales-invoice');
     } catch (err) {
-      toast.error(err.message || 'Failed to create invoice');
+      toast.error(err.message || 'Failed to save invoice');
     } finally {
       setLoading(false);
     }
@@ -256,8 +307,8 @@ export default function CreateSalesInvoice() {
   return (
     <div className="page-wrapper create-invoice">
       <PageHeader
-        title="Create Sales Invoice"
-        subtitle="Generate a new GST or Non-GST invoice"
+        title={isEditMode ? 'Edit Sales Invoice' : 'Create Sales Invoice'}
+        subtitle={isEditMode ? 'Modify invoice items, pricing, or customer details' : 'Generate a new GST or Non-GST invoice'}
         actionLabel="Back to History"
         actionIcon={HiOutlineArrowLeft}
         onAction={() => navigate('/admin/sales-invoice')}
@@ -439,13 +490,24 @@ export default function CreateSalesInvoice() {
           {/* Summary & Payment */}
           <div className="invoice-bottom">
             <Card className="invoice-card summary-card" title="Payment & Summary">
-              <div className="summary-grid">
-                <Select
-                  label="Receiving Account *"
-                  value={invoice.accountId}
-                  onChange={(e) => setInvoice(prev => ({ ...prev, accountId: e.target.value }))}
-                  options={accounts.map(acc => ({ value: acc.id, label: `${acc.accountName} (₹${acc.currentBalance})` }))}
-                />
+              <div className="summary-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <Select
+                    label="Receiving Account *"
+                    value={invoice.accountId}
+                    onChange={(e) => setInvoice(prev => ({ ...prev, accountId: e.target.value }))}
+                    options={accounts.map(acc => ({ value: acc.id, label: `${acc.accountName} (₹${acc.currentBalance})` }))}
+                  />
+                  <Select
+                    label="Payment Status *"
+                    value={invoice.paymentStatus}
+                    onChange={(e) => setInvoice(prev => ({ ...prev, paymentStatus: e.target.value }))}
+                    options={[
+                      { value: 'PENDING', label: 'Pending' },
+                      { value: 'PAID', label: 'Paid' }
+                    ]}
+                  />
+                </div>
                 <div className="summary-details">
                   <div className="summary-row">
                     <span>Subtotal:</span>
@@ -488,7 +550,7 @@ export default function CreateSalesInvoice() {
               </div>
               <div className="invoice-actions">
                 <Button type="submit" loading={loading} icon={HiOutlineSave} size="lg">
-                  Save & Print Invoice
+                  {isEditMode ? 'Update Invoice' : 'Save & Print Invoice'}
                 </Button>
               </div>
             </Card>

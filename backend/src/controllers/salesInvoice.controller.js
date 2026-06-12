@@ -37,6 +37,15 @@ const remove = async (req, res, next) => {
   }
 };
 
+const update = async (req, res, next) => {
+  try {
+    const data = await salesInvoiceService.update(req.params.id, req.body);
+    res.json(ApiResponse.success(data, 'Sales Invoice updated successfully'));
+  } catch (error) {
+    next(error);
+  }
+};
+
 const updatePaymentStatus = async (req, res, next) => {
   try {
     const data = await salesInvoiceService.updatePaymentStatus(req.params.id, req.body.paymentStatus);
@@ -46,4 +55,4 @@ const updatePaymentStatus = async (req, res, next) => {
   }
 };
 
-module.exports = { getAll, getById, create, remove, updatePaymentStatus };
+module.exports = { getAll, getById, create, update, remove, updatePaymentStatus };
