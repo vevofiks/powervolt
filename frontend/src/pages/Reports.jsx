@@ -21,7 +21,7 @@ export default function Reports() {
     setLoading(true);
     try {
       let res;
-      if (activeTab === 'profit-loss') {
+      if (activeTab === 'profit-loss' || activeTab === 'product-profit-loss') {
         res = await reportApi.getProfitLoss(filters);
       } else if (activeTab === 'gst') {
         res = await reportApi.getGst(filters);
@@ -137,6 +137,140 @@ export default function Reports() {
               </div>
             </div>
           </div>
+        </Card>
+      </div>
+    );
+  };
+
+  const renderProductProfitLoss = () => {
+    if (!reportData || !reportData.productPnL) return null;
+    const { revenue, cogs, grossProfit, directExpenses, purchases, netProfit } = reportData.productPnL;
+
+    return (
+      <div className="report-content">
+        {/* Product P&L Summary Cards */}
+        <div className="report-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
+          <Card className="report-stat-card">
+            <span className="stat-label" style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Product Sales Revenue</span>
+            <span className="stat-value font-bold text-green" style={{ fontSize: '1.5rem' }}>{formatCurrency(revenue)}</span>
+          </Card>
+          <Card className="report-stat-card">
+            <span className="stat-label" style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Cost of Goods Sold (COGS)</span>
+            <span className="stat-value font-bold text-red" style={{ fontSize: '1.5rem' }}>{formatCurrency(cogs)}</span>
+          </Card>
+          <Card className="report-stat-card highlight">
+            <span className="stat-label" style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Product Net Profit</span>
+            <span className={`stat-value font-bold ${netProfit >= 0 ? 'text-green' : 'text-red'}`} style={{ fontSize: '1.5rem' }}>
+              {formatCurrency(netProfit)}
+            </span>
+          </Card>
+        </div>
+
+        {/* Detailed Product P&L Statement */}
+        <Card title="Product Profit & Loss Statement" className="mt-20">
+          <div className="financial-statement" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            {/* Income Section */}
+            <div>
+              <h4 style={{ borderBottom: '2px solid var(--border-color)', paddingBottom: '0.5rem', marginBottom: '0.5rem', fontWeight: 600, color: 'var(--primary)' }}>PRODUCT REVENUE</h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0 0.5rem' }}>
+                  <span>Sales Revenue (Product Items Sold)</span>
+                  <span className="font-semibold">{formatCurrency(revenue)}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Cost of Goods Sold Section */}
+            <div>
+              <h4 style={{ borderBottom: '2px solid var(--border-color)', paddingBottom: '0.5rem', marginBottom: '0.5rem', fontWeight: 600, color: 'var(--text-red)' }}>COST OF GOODS SOLD</h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0 0.5rem' }}>
+                  <span>Cost of Goods Sold (COGS - Purchase Cost of Items Sold)</span>
+                  <span className="font-semibold text-red">-{formatCurrency(cogs)}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem', fontWeight: 700, backgroundColor: 'var(--bg-light)', borderRadius: '4px', marginTop: '0.25rem' }}>
+                  <span>PRODUCT GROSS PROFIT</span>
+                  <span className={grossProfit >= 0 ? 'text-green' : 'text-red'}>{formatCurrency(grossProfit)}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Direct & Carriage Expenses Section */}
+            <div>
+              <h4 style={{ borderBottom: '2px solid var(--border-color)', paddingBottom: '0.5rem', marginBottom: '0.5rem', fontWeight: 600, color: 'var(--text-red)' }}>DIRECT & OPERATING PRODUCT EXPENSES</h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0 0.5rem' }}>
+                  <span>Direct Purchase Expenses (Carriage, Logistics & Materials)</span>
+                  <span>{formatCurrency(directExpenses)}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem', fontWeight: 700, backgroundColor: 'var(--bg-light)', borderRadius: '4px', marginTop: '0.25rem' }}>
+                  <span>TOTAL DIRECT EXPENSES</span>
+                  <span>{formatCurrency(directExpenses)}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Net Position Summary */}
+            <div style={{ borderTop: '3px double var(--border-color)', paddingTop: '1rem', marginTop: '0.5rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.5rem', fontWeight: 800, fontSize: '1.1rem', backgroundColor: netProfit >= 0 ? 'rgba(76, 175, 80, 0.08)' : 'rgba(244, 67, 54, 0.08)', borderRadius: '6px' }}>
+                <span>PRODUCT NET PROFIT / LOSS</span>
+                <span className={netProfit >= 0 ? 'text-green' : 'text-red'}>{formatCurrency(netProfit)}</span>
+              </div>
+            </div>
+
+            {/* Inventory Reference Info */}
+            <div style={{ marginTop: '1rem', padding: '0.75rem', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+              <strong>Inventory Reference during this period:</strong>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.25rem' }}>
+                <span>Total Purchased Stock (Supplier Purchase Bills)</span>
+                <span>{formatCurrency(purchases)}</span>
+              </div>
+            </div>
+          </div>
+        </Card>
+
+        {/* Product-by-Product Profit & Loss Table */}
+        <Card title="Product-by-Product Profit & Loss" className="mt-20" padding={false}>
+          <table className="report-table">
+            <thead>
+              <tr>
+                <th>Product Name</th>
+                <th className="text-right">Purchased Qty</th>
+                <th className="text-right">Purchased Cost</th>
+                <th className="text-right">Sold Qty</th>
+                <th className="text-right">Sales Revenue</th>
+                <th className="text-right">COGS</th>
+                <th className="text-right">Net Profit / Loss</th>
+                <th className="text-right">Margin (%)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {reportData.productPnL.productBreakdown && reportData.productPnL.productBreakdown.length > 0 ? (
+                reportData.productPnL.productBreakdown.map((p, i) => (
+                  <tr key={i}>
+                    <td>{p.productName}</td>
+                    <td className="text-right">{p.purchasedQty}</td>
+                    <td className="text-right">{formatCurrency(p.purchasedAmount)}</td>
+                    <td className="text-right">{p.soldQty}</td>
+                    <td className="text-right">{formatCurrency(p.soldAmount)}</td>
+                    <td className="text-right">{formatCurrency(p.cogs)}</td>
+                    <td className={`text-right font-bold ${p.profit >= 0 ? 'text-green' : 'text-red'}`}>
+                      {formatCurrency(p.profit)}
+                    </td>
+                    <td className={`text-right ${p.margin >= 0 ? 'text-green' : 'text-red'}`}>
+                      {p.margin.toFixed(1)}%
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="8" style={{ textAlign: 'center', padding: '20px', color: 'var(--text-muted)' }}>
+                    No product transactions found in this period.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </Card>
       </div>
     );
@@ -261,7 +395,13 @@ export default function Reports() {
           className={`tab-btn ${activeTab === 'profit-loss' ? 'active' : ''}`}
           onClick={() => setActiveTab('profit-loss')}
         >
-          <HiOutlineCurrencyRupee /> Profit & Loss
+          <HiOutlineCurrencyRupee /> General P & L
+        </button>
+        <button 
+          className={`tab-btn ${activeTab === 'product-profit-loss' ? 'active' : ''}`}
+          onClick={() => setActiveTab('product-profit-loss')}
+        >
+          <HiOutlineCube /> Product P & L
         </button>
         <button 
           className={`tab-btn ${activeTab === 'gst' ? 'active' : ''}`}
@@ -277,7 +417,7 @@ export default function Reports() {
         </button>
       </div>
 
-      {(activeTab === 'profit-loss' || activeTab === 'gst') && (
+      {(activeTab === 'profit-loss' || activeTab === 'product-profit-loss' || activeTab === 'gst') && (
         <div className="report-filters">
           <Card>
             <div className="filter-row">
@@ -305,6 +445,7 @@ export default function Reports() {
 
       {loading ? <p style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)' }}>Loading report...</p> : (
         activeTab === 'profit-loss' ? renderProfitLoss() : 
+        activeTab === 'product-profit-loss' ? renderProductProfitLoss() : 
         activeTab === 'gst' ? renderGstReport() : 
         renderInventory()
       )}

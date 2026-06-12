@@ -11,7 +11,7 @@ const getProfitLoss = async (startDate, endDate) => {
     if (endDate) where.date.lte = new Date(endDate);
   }
 
-  const [sales, productSales, serviceSales, purchases, expenses] = await Promise.all([
+  const [sales, productSales, serviceSales, purchases, expenses, productItems, purchaseBillItems] = await Promise.all([
     // Total Revenue & Total Direct Profit
     prisma.salesInvoice.aggregate({
       where,
@@ -39,6 +39,19 @@ const getProfitLoss = async (startDate, endDate) => {
     prisma.expense.findMany({
       where,
       select: { category: true, amount: true }
+    }),
+    // Product sales items for detailed COGS calculation
+    prisma.salesInvoiceItem.findMany({
+      where: {
+        itemType: 'PRODUCT',
+        invoice: where.date ? { date: where.date } : {}
+      }
+    }),
+    // Purchase bill items for detailed product calculations
+    prisma.purchaseBillItem.findMany({
+      where: {
+        bill: where.date ? { date: where.date } : {}
+      }
     })
   ]);
 
@@ -48,6 +61,57 @@ const getProfitLoss = async (startDate, endDate) => {
 
   const purchaseBillCost = purchases._sum.totalAmount || 0;
 
+  // Let's calculate product COGS and direct profitability
+  const productRevenueFromItems = productItems.reduce((sum, item) => sum + (item.amount || 0), 0);
+  const productCOGS = productItems.reduce((sum, item) => sum + ((item.qty || 0) * (item.purchasePrice || 0)), 0);
+  const productGrossProfit = productRevenueFromItems - productCOGS;
+
+  // Let's calculate detailed product-by-product breakdown
+  const productStats = {};
+
+  productItems.forEach(item => {
+    const key = item.productId || item.productName;
+    if (!productStats[key]) {
+      productStats[key] = {
+        productId: item.productId,
+        productName: item.productName,
+        purchasedQty: 0,
+        purchasedAmount: 0,
+        soldQty: 0,
+        soldAmount: 0,
+        cogs: 0,
+        profit: 0
+      };
+    }
+    productStats[key].soldQty += item.qty || 0;
+    productStats[key].soldAmount += item.amount || 0;
+    productStats[key].cogs += (item.qty || 0) * (item.purchasePrice || 0);
+  });
+
+  purchaseBillItems.forEach(item => {
+    const key = item.productId || item.productName;
+    if (!productStats[key]) {
+      productStats[key] = {
+        productId: item.productId,
+        productName: item.productName,
+        purchasedQty: 0,
+        purchasedAmount: 0,
+        soldQty: 0,
+        soldAmount: 0,
+        cogs: 0,
+        profit: 0
+      };
+    }
+    productStats[key].purchasedQty += item.qty || 0;
+    productStats[key].purchasedAmount += item.amount || 0;
+  });
+
+  const productBreakdown = Object.values(productStats).map(p => {
+    p.profit = p.soldAmount - p.cogs;
+    p.margin = p.soldAmount > 0 ? (p.profit / p.soldAmount) * 100 : 0;
+    return p;
+  });
+
   // Let's categorize the expenses
   let salaryPaid = 0;
   let purchaseExpenses = purchaseBillCost; // starts with inventory purchase bills
@@ -56,6 +120,7 @@ const getProfitLoss = async (startDate, endDate) => {
   let travelExpenses = 0;
   let foodExpenses = 0;
   let otherExpenses = 0;
+  let directProductExpenses = 0; // Carriage, material purchases, etc.
 
   expenses.forEach(exp => {
     const cat = exp.category;
@@ -65,6 +130,7 @@ const getProfitLoss = async (startDate, endDate) => {
       salaryPaid += amt;
     } else if (cat === 'PURCHASE_EXPENSE' || cat === 'MATERIALS') {
       purchaseExpenses += amt;
+      directProductExpenses += amt;
     } else if (cat === 'SITE_EXPENSE') {
       siteExpenses += amt;
     } else if (cat === 'TRAVEL_EXPENSE' || cat === 'FUEL' || cat === 'TRAVEL') {
@@ -97,6 +163,17 @@ const getProfitLoss = async (startDate, endDate) => {
 
     totalExpenses,
     netProfit,
+
+    // Product specific P&L
+    productPnL: {
+      revenue: productRevenueFromItems,
+      cogs: productCOGS,
+      grossProfit: productGrossProfit,
+      directExpenses: directProductExpenses,
+      purchases: purchaseBillCost,
+      netProfit: productGrossProfit - directProductExpenses,
+      productBreakdown
+    },
 
     // Keep some original fields for dashboard/other modules compatibility
     grossProfit: totalRevenue - purchaseExpenses,

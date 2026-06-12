@@ -113,7 +113,27 @@ export default function Dashboard() {
         })}
       </div>
 
-
+      <h3 className="dashboard__section-title" style={{ marginTop: '2rem', marginBottom: '1rem', paddingLeft: '0.25rem' }}>Purchased Products P&L (All-Time)</h3>
+      <div className="dashboard__stats" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '2rem' }}>
+        {[
+          { label: 'Product Sales Revenue', value: formatCurrency(summary.productRevenue), icon: HiOutlineTrendingUp, color: 'green' },
+          { label: 'Product COGS', value: formatCurrency(summary.productCOGS), icon: HiOutlineTrendingDown, color: 'red' },
+          { label: 'Product Net Profit', value: formatCurrency(summary.productProfit), icon: HiOutlineCurrencyRupee, color: summary.productProfit >= 0 ? 'green' : 'red' }
+        ].map((stat) => {
+          const Icon = stat.icon;
+          return (
+            <Card key={stat.label} className="dashboard__stat-card" style={{ padding: '1rem' }}>
+              <div className="dashboard__stat-content">
+                <span className="dashboard__stat-label" style={{ fontSize: '0.8rem' }}>{stat.label}</span>
+                <span className="dashboard__stat-value" style={{ fontSize: '1.25rem' }}>{stat.value}</span>
+              </div>
+              <div className={`dashboard__stat-icon dashboard__stat-icon--${stat.color}`} style={{ width: '40px', height: '40px', fontSize: '1.25rem' }}>
+                <Icon />
+              </div>
+            </Card>
+          );
+        })}
+      </div>
 
       <div className="dashboard__grid">
         {/* Account Balances */}

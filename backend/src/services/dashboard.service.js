@@ -73,7 +73,9 @@ const getStats = async () => {
     overallWorkEntries,
     overallAllowances,
     overallDeductions,
-    overallPayments
+    overallPayments,
+    overallProductSales,
+    overallProductItems
   ] = await Promise.all([
     prisma.salesInvoice.aggregate({ _sum: { totalAmount: true, taxAmount: true } }),
     prisma.expense.aggregate({ _sum: { amount: true, gstPaid: true } }),
@@ -81,7 +83,15 @@ const getStats = async () => {
     prisma.siteWorkEntry.aggregate({ _sum: { amount: true } }),
     prisma.workerAllowance.aggregate({ _sum: { amount: true } }),
     prisma.workerDeduction.aggregate({ _sum: { amount: true } }),
-    prisma.salaryPayment.aggregate({ _sum: { amount: true } })
+    prisma.salaryPayment.aggregate({ _sum: { amount: true } }),
+    prisma.salesInvoiceItem.aggregate({
+      where: { itemType: 'PRODUCT' },
+      _sum: { amount: true }
+    }),
+    prisma.salesInvoiceItem.findMany({
+      where: { itemType: 'PRODUCT' },
+      select: { qty: true, purchasePrice: true }
+    })
   ]);
 
   const totalRevenue = overallSales._sum.totalAmount || 0;
@@ -103,6 +113,11 @@ const getStats = async () => {
   const gstPaidOnExpenses = overallExpenses._sum.gstPaid || 0;
   const gstPaid = gstPaidOnPurchases + gstPaidOnExpenses;
 
+  // Calculate Product P&L
+  const productRevenue = overallProductSales._sum.amount || 0;
+  const productCOGS = overallProductItems.reduce((acc, item) => acc + ((item.qty || 0) * (item.purchasePrice || 0)), 0);
+  const productProfit = productRevenue - productCOGS;
+
   return {
     summary: {
       monthlySales: salesAmount._sum.totalAmount || 0,
@@ -121,7 +136,12 @@ const getStats = async () => {
       salaryPayable,
       salaryPaid,
       gstCollected,
-      gstPaid
+      gstPaid,
+
+      // Product specific P&L
+      productRevenue,
+      productCOGS,
+      productProfit
     },
     recentSales,
     recentExpenses,

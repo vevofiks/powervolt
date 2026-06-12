@@ -225,11 +225,7 @@ export default function InvoicePrint({ invoice }) {
             <p>PAN: {settings?.companyPan || 'ANAPL6617R'}</p>
           </div>
 
-          {/* Column 2: Authorized By */}
-          <div className="authorized-by-col">
-            <p className="auth-label">Authorized By</p>
-            <p className="auth-name">Lukmanul Hakeem M</p>
-          </div>
+
 
           {/* Column 3: Stamp & Signature */}
           <div className="signature-area">
