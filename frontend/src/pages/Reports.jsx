@@ -17,6 +17,12 @@ export default function Reports() {
     endDate: new Date().toISOString().split('T')[0]
   });
 
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    setReportData(null);
+    setLoading(true);
+  };
+
   const fetchReport = useCallback(async () => {
     setLoading(true);
     try {
@@ -41,7 +47,7 @@ export default function Reports() {
   }, [fetchReport]);
 
   const renderProfitLoss = () => {
-    if (!reportData) return null;
+    if (!reportData || reportData.revenue === undefined) return null;
     const { 
       revenue, productSales, serviceSales, 
       salaryPaid, purchaseExpenses, siteExpenses, operationalExpenses, travelExpenses, foodExpenses, otherExpenses,
@@ -277,7 +283,7 @@ export default function Reports() {
   };
 
   const renderGstReport = () => {
-    if (!reportData) return null;
+    if (!reportData || reportData.totalGstCollected === undefined) return null;
     const { totalGstCollected, gstPaidOnPurchases, gstPaidOnExpenses, totalGstPaid, netGstPosition } = reportData;
 
     return (
@@ -334,7 +340,7 @@ export default function Reports() {
   };
 
   const renderInventory = () => {
-    if (!reportData) return null;
+    if (!reportData || !reportData.products) return null;
     return (
       <div className="report-content">
         <div className="report-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
@@ -393,25 +399,25 @@ export default function Reports() {
       <div className="report-tabs">
         <button 
           className={`tab-btn ${activeTab === 'profit-loss' ? 'active' : ''}`}
-          onClick={() => setActiveTab('profit-loss')}
+          onClick={() => handleTabChange('profit-loss')}
         >
           <HiOutlineCurrencyRupee /> General P & L
         </button>
         <button 
           className={`tab-btn ${activeTab === 'product-profit-loss' ? 'active' : ''}`}
-          onClick={() => setActiveTab('product-profit-loss')}
+          onClick={() => handleTabChange('product-profit-loss')}
         >
           <HiOutlineCube /> Product P & L
         </button>
         <button 
           className={`tab-btn ${activeTab === 'gst' ? 'active' : ''}`}
-          onClick={() => setActiveTab('gst')}
+          onClick={() => handleTabChange('gst')}
         >
           <HiOutlineTag /> GST Expense Summary
         </button>
         <button 
           className={`tab-btn ${activeTab === 'inventory' ? 'active' : ''}`}
-          onClick={() => setActiveTab('inventory')}
+          onClick={() => handleTabChange('inventory')}
         >
           <HiOutlineCube /> Inventory Report
         </button>

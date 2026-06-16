@@ -6,6 +6,7 @@ import Card from '../components/ui/Card';
 import Button from '../components/ui/Button';
 import LoadingSkeleton from '../components/ui/LoadingSkeleton';
 import { serviceInvoiceApi } from '../api/serviceInvoices';
+import { settingApi } from '../api/settings';
 import { HiOutlinePrinter, HiOutlineArrowLeft } from 'react-icons/hi';
 import { formatDate } from '../utils/formatDate';
 import './ServiceInvoicePrint.css';
@@ -14,24 +15,29 @@ export default function ViewServiceInvoice() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [invoice, setInvoice] = useState(null);
+  const [settings, setSettings] = useState(null);
   const [loading, setLoading] = useState(true);
   const printRef = useRef(null);
 
   useEffect(() => {
-    fetchInvoice();
-  }, [id]);
-
-  const fetchInvoice = async () => {
-    try {
-      const res = await serviceInvoiceApi.getById(id);
-      setInvoice(res.data);
-    } catch (err) {
-      toast.error('Failed to load invoice');
-      navigate('/admin/service-invoice');
-    } finally {
-      setLoading(false);
-    }
-  };
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        const [invRes, settingsRes] = await Promise.all([
+          serviceInvoiceApi.getById(id),
+          settingApi.get()
+        ]);
+        setInvoice(invRes.data);
+        setSettings(settingsRes.data);
+      } catch (err) {
+        toast.error('Failed to load invoice details');
+        navigate('/admin/service-invoice');
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
+  }, [id, navigate]);
 
   const handlePrint = () => {
     const originalTitle = document.title;
@@ -116,33 +122,15 @@ export default function ViewServiceInvoice() {
             </div>
           </div>
 
-          <div className="si-bank-section">
-            <div className="si-section-title">PAYMENT INFORMATION</div>
-            <div className="si-bank-grid">
-              <div className="si-bank-item">
-                <span>Bank</span>
-                <strong>{invoice.account?.bankName || 'CANARA BANK'}</strong>
-              </div>
-              <div className="si-bank-item">
-                <span>Account Name</span>
-                <strong>{invoice.account?.accountName || '—'}</strong>
-              </div>
-              <div className="si-bank-item">
-                <span>A/C Number</span>
-                <strong>{invoice.account?.accountNumber || '—'}</strong>
-              </div>
-              <div className="si-bank-item">
-                <span>IFSC Code</span>
-                <strong>{invoice.account?.ifscCode || '—'}</strong>
-              </div>
-              <div className="si-bank-item">
-                <span>Branch</span>
-                <strong>{invoice.account?.branch || '—'}</strong>
-              </div>
-              <div className="si-bank-item">
-                <span>PAN Card</span>
-                <strong>{/* Add PAN here if available in context, else keep empty */}—</strong>
-              </div>
+          <div className="invoice-bottom-section">
+            {/* Column 1: Bank Details */}
+            <div className="bank-details">
+              <h4>Bank Details</h4>
+              <p>Bank: {invoice.account?.bankName || 'Federal Bank - Manjeri'}</p>
+              <p>Name: {invoice.account?.accountName || 'POWER VOLT'}</p>
+              <p>A/C No: {invoice.account?.accountNumber || '13650200030606'}</p>
+              <p>IFSC: {invoice.account?.ifscCode || 'FDRL0001365'}</p>
+              <p>PAN: {settings?.companyPan || 'ANAPL6617R'}</p>
             </div>
           </div>
 
