@@ -181,19 +181,109 @@ export default function WorkSiteDetails() {
       <div className="tab-content">
         {activeTab === 'overview' && (
           <div className="overview-tab">
-            <Card title="Project Site Profitability">
-              <div className="info-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem' }}>
-                <div className="info-item"><label>Start Date</label><span>{formatDate(site.startDate)}</span></div>
-                <div className="info-item"><label>End Date</label><span>{site.endDate ? formatDate(site.endDate) : '—'}</span></div>
-                <div className="info-item"><label>Status</label><Badge variant="primary">{site.status}</Badge></div>
-                <div className="info-item"><label>Site Revenue (Budget)</label><span className="font-semibold text-green">{formatCurrency(site.stats.revenue)}</span></div>
-                <div className="info-item"><label>Labor Cost Calculated</label><span className="font-semibold">{formatCurrency(site.stats.laborCostCalculated)}</span></div>
-                <div className="info-item"><label>Labor Cost Paid</label><span className="font-semibold text-blue">{formatCurrency(site.stats.laborCostPaid)}</span></div>
-                <div className="info-item"><label>Other Expenses</label><span className="font-semibold text-red">{formatCurrency(site.stats.otherExpenses)}</span></div>
-                <div className="info-item"><label>Estimated Profit</label><span className="font-bold text-primary" style={{ fontSize: '1.2rem' }}>{formatCurrency(site.stats.profit)}</span></div>
-                <div className="info-item" style={{ gridColumn: 'span 2' }}><label>Notes</label><span>{site.notes || '—'}</span></div>
+            <div className="worksite-doc">
+              <div className="worksite-doc__header">
+                <div className="worksite-doc__title-row">
+                  <div>
+                    <h3 className="worksite-doc__title">Worksite Status Summary</h3>
+                    <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: 'var(--color-text-muted, #64748b)' }}>
+                      Official Project Summary Sheet & Profitability Analysis
+                    </p>
+                  </div>
+                  <Badge variant={site.status === 'COMPLETED' ? 'success' : site.status === 'RUNNING' ? 'primary' : 'secondary'}>
+                    {site.status}
+                  </Badge>
+                </div>
               </div>
-            </Card>
+
+              <div className="worksite-doc__meta-grid">
+                <div>
+                  <div className="worksite-doc__section-title">Project Details</div>
+                  <div className="worksite-doc__info-list">
+                    <div className="worksite-doc__info-item">
+                      <span className="worksite-doc__info-label">Project Name</span>
+                      <span className="worksite-doc__info-value">{site.name}</span>
+                    </div>
+                    <div className="worksite-doc__info-item">
+                      <span className="worksite-doc__info-label">Client Name</span>
+                      <span className="worksite-doc__info-value">{site.customer?.name || 'Walk-in'}</span>
+                    </div>
+                    <div className="worksite-doc__info-item">
+                      <span className="worksite-doc__info-label">Site Location</span>
+                      <span className="worksite-doc__info-value">{site.location || 'N/A'}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <div className="worksite-doc__section-title">Timeline</div>
+                  <div className="worksite-doc__info-list">
+                    <div className="worksite-doc__info-item">
+                      <span className="worksite-doc__info-label">Start Date</span>
+                      <span className="worksite-doc__info-value">{formatDate(site.startDate)}</span>
+                    </div>
+                    <div className="worksite-doc__info-item">
+                      <span className="worksite-doc__info-label">Completion Date</span>
+                      <span className="worksite-doc__info-value">{site.endDate ? formatDate(site.endDate) : 'In Progress'}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="worksite-doc__section">
+                <div className="worksite-doc__section-title">Financial Balance Sheet</div>
+                <div className="financial-sheet">
+                  {/* Revenue */}
+                  <div className="financial-sheet__row">
+                    <span style={{ fontWeight: 600 }}>Project Revenue (Budgeted)</span>
+                    <span className="financial-sheet__val positive font-semibold">{formatCurrency(site.stats.revenue)}</span>
+                  </div>
+
+                  {/* Expenses */}
+                  <div className="financial-sheet__row" style={{ marginTop: '12px', borderBottom: '1px solid var(--color-border, #e2e8f0)', paddingBottom: '4px', fontWeight: 600 }}>
+                    <span>Project Expenses</span>
+                    <span></span>
+                  </div>
+                  <div className="financial-sheet__row indent">
+                    <span>Labor Cost (Calculated Attendance)</span>
+                    <span className="financial-sheet__val negative">-{formatCurrency(site.stats.laborCostCalculated)}</span>
+                  </div>
+                  <div className="financial-sheet__row indent">
+                    <span>Labor Cost Paid (Advance / Payments)</span>
+                    <span className="financial-sheet__val text-blue">-{formatCurrency(site.stats.laborCostPaid)}</span>
+                  </div>
+                  <div className="financial-sheet__row indent">
+                    <span>Other Direct Expenses (Materials, Travel, etc.)</span>
+                    <span className="financial-sheet__val negative">-{formatCurrency(site.stats.otherExpenses)}</span>
+                  </div>
+
+                  {/* Total expenses */}
+                  <div className="financial-sheet__row total">
+                    <span>Total Calculated Expenses</span>
+                    <span className="financial-sheet__val negative" style={{ fontWeight: 600 }}>
+                      -{formatCurrency(site.stats.laborCostCalculated + site.stats.otherExpenses)}
+                    </span>
+                  </div>
+
+                  {/* Profit */}
+                  <div className="financial-sheet__row grand-total">
+                    <span>ESTIMATED NET PROFIT / LOSS</span>
+                    <span className={`financial-sheet__val ${site.stats.profit >= 0 ? 'positive' : 'negative'}`}>
+                      {formatCurrency(site.stats.profit)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {site.notes && (
+                <div className="worksite-doc__section" style={{ marginBottom: 0 }}>
+                  <div className="worksite-doc__section-title">Special Notes / Instructions</div>
+                  <div className="worksite-doc__notes">
+                    {site.notes}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
 

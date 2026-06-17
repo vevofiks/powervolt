@@ -11,11 +11,24 @@ const { buildPagination } = require('../utils/helpers');
  * Direct sequential queries, no tx injection.
  */
 const handleCustomerLink = async (customerId, customerName, phone) => {
-  if (customerId) return customerId;
-  if (!customerName) return null;
+  let customer;
+  if (customerId) {
+    customer = await prisma.customer.findUnique({ where: { id: customerId } });
+  } else if (customerName) {
+    customer = await prisma.customer.findFirst({ where: { name: customerName } });
+  }
 
-  const existing = await prisma.customer.findFirst({ where: { name: customerName } });
-  if (existing) return existing.id;
+  if (customer) {
+    if (phone && customer.phone !== phone) {
+      await prisma.customer.update({
+        where: { id: customer.id },
+        data: { phone }
+      });
+    }
+    return customer.id;
+  }
+
+  if (!customerName) return null;
 
   const newCust = await prisma.customer.create({
     data: { name: customerName, phone: phone || null }
@@ -164,8 +177,8 @@ const update = async (id, data) => {
       name: data.name,
       customerId,
       location: data.location,
-      startDate: data.startDate ? new Date(data.startDate) : undefined,
-      endDate: data.endDate ? new Date(data.endDate) : undefined,
+      startDate: data.startDate ? new Date(data.startDate) : (data.startDate === '' ? null : undefined),
+      endDate: data.endDate ? new Date(data.endDate) : (data.endDate === '' ? null : undefined),
       status: data.status,
       budget: data.budget !== undefined ? parseFloat(data.budget) : undefined,
       notes: data.notes
@@ -217,30 +230,49 @@ const addWorkEntry = async (data) => {
 
   // 1. Check for duplicate attendance on this day
   const existing = await prisma.siteWorkEntry.findFirst({
-    where: { workerId: data.workerId, date: { gte: startOfDay, lte: endOfDay } },
-    include: { workSite: { select: { name: true } } }
+    where: { workerId: data.workerId, date: { gte: startOfDay, lte: endOfDay } }
   });
 
+  let entry;
   if (existing) {
-    throw ApiError.badRequest(
-      `Attendance already marked for this worker on ${startOfDay.toISOString().split('T')[0]} at ${existing.workSite.name}`
-    );
-  }
+    // Update existing entry
+    entry = await prisma.siteWorkEntry.update({
+      where: { id: existing.id },
+      data: {
+        workSiteId: data.workSiteId,
+        workType: data.workType,
+        hours: data.hours ? parseFloat(data.hours) : null,
+        rate: parseFloat(data.rate),
+        amount: parseFloat(data.amount),
+        notes: data.notes
+      },
+      include: { workSite: { select: { name: true } } }
+    });
 
-  // 2. Create the work entry
-  const entry = await prisma.siteWorkEntry.create({
-    data: {
-      workSiteId: data.workSiteId,
-      workerId: data.workerId,
-      date: startOfDay,
-      workType: data.workType,
-      hours: data.hours ? parseFloat(data.hours) : null,
-      rate: parseFloat(data.rate),
-      amount: parseFloat(data.amount),
-      notes: data.notes
-    },
-    include: { workSite: { select: { name: true } } }
-  });
+    // Delete existing travel/food allowances for this worker on this day
+    await prisma.workerAllowance.deleteMany({
+      where: {
+        workerId: data.workerId,
+        date: startOfDay,
+        type: { in: ['TRAVEL', 'FOOD'] }
+      }
+    });
+  } else {
+    // Create new entry
+    entry = await prisma.siteWorkEntry.create({
+      data: {
+        workSiteId: data.workSiteId,
+        workerId: data.workerId,
+        date: startOfDay,
+        workType: data.workType,
+        hours: data.hours ? parseFloat(data.hours) : null,
+        rate: parseFloat(data.rate),
+        amount: parseFloat(data.amount),
+        notes: data.notes
+      },
+      include: { workSite: { select: { name: true } } }
+    });
+  }
 
   // 3. Add Travel Allowance if provided
   if (data.travelAllowance && parseFloat(data.travelAllowance) > 0) {
@@ -287,26 +319,51 @@ const addBulkWorkEntries = async (workSiteId, entries) => {
     // Skip future dates silently
     if (startOfDay > today) continue;
 
-    // Skip if already marked for this worker on this day
+    // Check if already marked for this worker on this day
     const existing = await prisma.siteWorkEntry.findFirst({
       where: { workerId: data.workerId, date: { gte: startOfDay, lte: endOfDay } }
     });
-    if (existing) continue;
 
-    // Create work entry
-    const entry = await prisma.siteWorkEntry.create({
-      data: {
-        workSiteId,
-        workerId: data.workerId,
-        date: startOfDay,
-        workType: data.workType,
-        hours: data.hours ? parseFloat(data.hours) : null,
-        rate: parseFloat(data.rate),
-        amount: parseFloat(data.amount),
-        notes: data.notes
-      },
-      include: { workSite: { select: { name: true } } }
-    });
+    let entry;
+    if (existing) {
+      // Update existing entry
+      entry = await prisma.siteWorkEntry.update({
+        where: { id: existing.id },
+        data: {
+          workSiteId,
+          workType: data.workType,
+          hours: data.hours ? parseFloat(data.hours) : null,
+          rate: parseFloat(data.rate),
+          amount: parseFloat(data.amount),
+          notes: data.notes
+        },
+        include: { workSite: { select: { name: true } } }
+      });
+
+      // Delete existing travel/food allowances for this worker on this day
+      await prisma.workerAllowance.deleteMany({
+        where: {
+          workerId: data.workerId,
+          date: startOfDay,
+          type: { in: ['TRAVEL', 'FOOD'] }
+        }
+      });
+    } else {
+      // Create new entry
+      entry = await prisma.siteWorkEntry.create({
+        data: {
+          workSiteId,
+          workerId: data.workerId,
+          date: startOfDay,
+          workType: data.workType,
+          hours: data.hours ? parseFloat(data.hours) : null,
+          rate: parseFloat(data.rate),
+          amount: parseFloat(data.amount),
+          notes: data.notes
+        },
+        include: { workSite: { select: { name: true } } }
+      });
+    }
 
     // Add Travel Allowance
     if (data.travelAllowance && parseFloat(data.travelAllowance) > 0) {

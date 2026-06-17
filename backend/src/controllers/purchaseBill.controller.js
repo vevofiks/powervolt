@@ -34,9 +34,18 @@ const updatePaymentStatus = catchAsync(async (req, res) => {
   });
 });
 
+const deleteBill = catchAsync(async (req, res) => {
+  await purchaseBillService.deleteBill(req.params.id);
+  res.status(200).json({
+    success: true,
+    message: 'Purchase bill deleted successfully',
+  });
+});
+
 module.exports = {
   createBill,
   getAllBills,
   getBillById,
   updatePaymentStatus,
+  deleteBill,
 };

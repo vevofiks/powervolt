@@ -10,7 +10,7 @@ import LoadingSkeleton from '../components/ui/LoadingSkeleton';
 import { purchaseBillApi } from '../api/purchaseBills';
 import { formatCurrency } from '../utils/formatCurrency';
 import { formatDate } from '../utils/formatDate';
-import { HiOutlinePlus, HiOutlineEye, HiOutlineSearch } from 'react-icons/hi';
+import { HiOutlinePlus, HiOutlineEye, HiOutlineSearch, HiOutlineTrash } from 'react-icons/hi';
 
 export default function PurchaseBills() {
   const navigate = useNavigate();
@@ -33,6 +33,17 @@ export default function PurchaseBills() {
   useEffect(() => {
     fetchBills();
   }, [fetchBills]);
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this purchase bill? This will revert product stock levels and account balances associated with this bill.')) return;
+    try {
+      await purchaseBillApi.delete(id);
+      toast.success('Purchase bill deleted successfully');
+      setBills(prev => prev.filter(bill => bill.id !== id));
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || 'Failed to delete purchase bill');
+    }
+  };
 
   const handlePaymentStatusChange = async (id, newStatus) => {
     try {
@@ -66,13 +77,25 @@ export default function PurchaseBills() {
       </select>
     )},
     { key: 'id', label: 'Actions', align: 'right', render: (id) => (
-      <button 
-        className="text-gray-500 hover:text-primary transition-colors p-1" 
-        onClick={() => navigate(`/admin/purchase-bills/${id}`)} 
-        title="View Bill"
-      >
-        <HiOutlineEye size={18} />
-      </button>
+      <div className="flex gap-2 justify-end" style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+        <button 
+          className="text-gray-500 hover:text-primary transition-colors p-1" 
+          onClick={() => navigate(`/admin/purchase-bills/${id}`)} 
+          title="View Bill"
+        >
+          <HiOutlineEye size={18} />
+        </button>
+        <button 
+          className="text-red-500 hover:text-red-700 transition-colors p-1" 
+          onClick={(e) => {
+            e.stopPropagation();
+            handleDelete(id);
+          }} 
+          title="Delete Bill"
+        >
+          <HiOutlineTrash size={18} />
+        </button>
+      </div>
     )},
   ];
 

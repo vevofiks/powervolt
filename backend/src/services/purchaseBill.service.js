@@ -231,6 +231,69 @@ class PurchaseBillService {
 
     return updatedBill;
   }
+
+  async deleteBill(id) {
+    const bill = await prisma.purchaseBill.findUnique({
+      where: { id },
+      include: { items: true },
+    });
+    if (!bill) {
+      throw new ApiError(404, 'Purchase Bill not found');
+    }
+
+    // 1. Revert Paying Account Balance and Ledger Transaction if PAID
+    if (bill.paymentStatus === 'PAID') {
+      const account = await prisma.account.findUnique({ where: { id: bill.accountId } });
+      if (account) {
+        await prisma.account.update({
+          where: { id: bill.accountId },
+          data: {
+            currentBalance: {
+              increment: bill.totalAmount,
+            },
+          },
+        });
+      }
+
+      await prisma.ledgerTransaction.deleteMany({
+        where: {
+          OR: [
+            { linkedId: bill.id },
+            { referenceNo: bill.billNo, moduleType: 'PURCHASE_BILL' },
+          ]
+        },
+      });
+    }
+
+    // 2. Revert Product Stocks and Stock History
+    for (const item of bill.items) {
+      const product = await prisma.product.findUnique({ where: { id: item.productId } });
+      if (product) {
+        await prisma.product.update({
+          where: { id: item.productId },
+          data: {
+            currentStock: {
+              decrement: item.qty,
+            },
+          },
+        });
+
+        await prisma.stockHistory.deleteMany({
+          where: {
+            reference: bill.billNo,
+            productId: item.productId,
+          },
+        });
+      }
+    }
+
+    // 3. Delete the PurchaseBill itself
+    await prisma.purchaseBill.delete({
+      where: { id },
+    });
+
+    return true;
+  }
 }
 
 module.exports = new PurchaseBillService();

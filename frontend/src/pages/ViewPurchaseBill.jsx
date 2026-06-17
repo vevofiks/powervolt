@@ -8,7 +8,7 @@ import Button from '../components/ui/Button';
 import { purchaseBillApi } from '../api/purchaseBills';
 import { formatCurrency } from '../utils/formatCurrency';
 import { formatDate } from '../utils/formatDate';
-import { HiOutlinePrinter, HiOutlineArrowLeft, HiOutlineOfficeBuilding } from 'react-icons/hi';
+import { HiOutlinePrinter, HiOutlineArrowLeft, HiOutlineOfficeBuilding, HiOutlineTrash } from 'react-icons/hi';
 import stamp from '../assets/official_stamp.jpg';
 import '../components/sales/InvoicePrint.css'; // Reusing print styles
 
@@ -40,6 +40,17 @@ export default function ViewPurchaseBill() {
     document.title = originalTitle;
   };
 
+  const handleDelete = async () => {
+    if (!window.confirm('Are you sure you want to delete this purchase bill? This will revert product stock levels and account balances associated with this bill.')) return;
+    try {
+      await purchaseBillApi.delete(id);
+      toast.success('Purchase bill deleted successfully');
+      navigate('/admin/purchase-bills');
+    } catch (err) {
+      toast.error(err.response?.data?.message || err.message || 'Failed to delete purchase bill');
+    }
+  };
+
   if (loading) {
     return (
       <div className="page-wrapper">
@@ -61,7 +72,10 @@ export default function ViewPurchaseBill() {
           actionIcon={HiOutlineArrowLeft}
           onAction={() => navigate('/admin/purchase-bills')}
         >
-          <Button icon={HiOutlinePrinter} onClick={handlePrint}>Print Bill</Button>
+          <div className="flex gap-2" style={{ display: 'flex', gap: '8px' }}>
+            <Button icon={HiOutlinePrinter} onClick={handlePrint}>Print Bill</Button>
+            <Button variant="danger" icon={HiOutlineTrash} onClick={handleDelete}>Delete Bill</Button>
+          </div>
         </PageHeader>
       </div>
 

@@ -5,4 +5,5 @@ export const purchaseBillApi = {
   getById: (id) => axios.get(`/purchase-bills/${id}`),
   create: (data) => axios.post('/purchase-bills', data),
   updatePaymentStatus: (id, status) => axios.patch(`/purchase-bills/${id}/payment-status`, { paymentStatus: status }),
+  delete: (id) => axios.delete(`/purchase-bills/${id}`),
 };

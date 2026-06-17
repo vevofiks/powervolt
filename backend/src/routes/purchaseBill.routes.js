@@ -10,7 +10,8 @@ router
 
 router
   .route('/:id')
-  .get(purchaseBillController.getBillById);
+  .get(purchaseBillController.getBillById)
+  .delete(purchaseBillController.deleteBill);
 
 router.patch('/:id/payment-status', purchaseBillController.updatePaymentStatus);
 
