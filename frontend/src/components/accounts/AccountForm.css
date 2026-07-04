@@ -1,3 +1,8 @@
+.account-form {
+  width: 100%;
+  overflow-x: hidden;
+}
+
 .account-form__grid {
   display: grid;
   grid-template-columns: 1fr 1fr;

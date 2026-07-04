@@ -156,30 +156,65 @@ export default function Accounts() {
 
   // ─── Table Columns ─────────────────────────────────────────
   const columns = [
-    { key: 'accountName', label: 'Account Name', render: (val) => <span className="font-semibold">{val}</span> },
-    { key: 'bankName', label: 'Bank', render: (val) => val || '—' },
-    { key: 'accountNumber', label: 'Account No.', render: (val) => val || '—' },
-    { key: 'panCardNumber', label: 'PAN', render: (val) => val || '—' },
-    { key: 'openingBalance', label: 'Opening Bal.', align: 'right', render: (val) => formatCurrency(val) },
-    { key: 'currentBalance', label: 'Current Bal.', align: 'right', render: (val) => (
-      <span className={val >= 0 ? 'text-success' : 'text-danger'}>{formatCurrency(val)}</span>
-    )},
-    { key: 'isActive', label: 'Status', render: (val) => (
-      <Badge variant={val ? 'success' : 'default'}>{val ? 'Active' : 'Inactive'}</Badge>
-    )},
-    { key: 'id', label: 'Actions', render: (_val, row) => (
-      <div className="accounts__actions">
-        <button className="accounts__action-btn" title="View Details" onClick={() => navigate(`/admin/accounts/${row.id}`)}>
-          <HiOutlineEye />
-        </button>
-        <button className="accounts__action-btn" title="Edit" onClick={() => { setSelectedAccount(row); setShowEditModal(true); }}>
-          <HiOutlinePencil />
-        </button>
-        <button className="accounts__action-btn accounts__action-btn--danger" title="Delete" onClick={() => handleDelete(row)}>
-          <HiOutlineTrash />
-        </button>
-      </div>
-    )},
+    {
+      key: 'accountName',
+      label: 'Account / Bank',
+      render: (val, row) => (
+        <div>
+          <div className="font-semibold">{val}</div>
+          {row.bankName && <div className="text-xs text-muted" style={{ fontSize: '11px', marginTop: '2px' }}>{row.bankName}</div>}
+        </div>
+      ),
+    },
+    {
+      key: 'accountNumber',
+      label: 'Account No / PAN',
+      render: (val, row) => (
+        <div style={{ lineHeight: '1.4' }}>
+          <div><span className="text-muted" style={{ fontSize: '11px' }}>A/c:</span> {val || '—'}</div>
+          {row.panCardNumber && (
+            <div><span className="text-muted" style={{ fontSize: '11px' }}>PAN:</span> {row.panCardNumber}</div>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: 'currentBalance',
+      label: 'Balance',
+      align: 'right',
+      render: (val, row) => (
+        <div style={{ textAlign: 'right' }}>
+          <div className={val >= 0 ? 'text-success' : 'text-danger'}>{formatCurrency(val)}</div>
+          <div className="text-muted" style={{ fontSize: '11px', marginTop: '2px' }}>
+            Open: {formatCurrency(row.openingBalance)}
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'isActive',
+      label: 'Status',
+      render: (val) => (
+        <Badge variant={val ? 'success' : 'default'}>{val ? 'Active' : 'Inactive'}</Badge>
+      ),
+    },
+    {
+      key: 'id',
+      label: 'Actions',
+      render: (_val, row) => (
+        <div className="accounts__actions">
+          <button className="accounts__action-btn" title="View Details" onClick={() => navigate(`/admin/accounts/${row.id}`)}>
+            <HiOutlineEye />
+          </button>
+          <button className="accounts__action-btn" title="Edit" onClick={() => { setSelectedAccount(row); setShowEditModal(true); }}>
+            <HiOutlinePencil />
+          </button>
+          <button className="accounts__action-btn accounts__action-btn--danger" title="Delete" onClick={() => handleDelete(row)}>
+            <HiOutlineTrash />
+          </button>
+        </div>
+      ),
+    },
   ];
 
   const ledgerColumns = [
