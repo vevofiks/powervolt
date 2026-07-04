@@ -17,11 +17,12 @@ const getAll = async (query = {}) => {
 
   const where = {};
 
-  // Search by account name or bank name
+  // Search by account name, bank name or PAN card number
   if (query.search) {
     where.OR = [
       { accountName: { contains: query.search, mode: 'insensitive' } },
       { bankName: { contains: query.search, mode: 'insensitive' } },
+      { panCardNumber: { contains: query.search, mode: 'insensitive' } },
     ];
   }
 
@@ -74,7 +75,7 @@ const getById = async (id) => {
  * Create a new account.
  */
 const create = async (data) => {
-  const { accountName, bankName, accountNumber, branch, ifscCode, openingBalance, notes } = data;
+  const { accountName, bankName, accountNumber, branch, ifscCode, panCardNumber, openingBalance, notes } = data;
 
   if (!accountName || !accountName.trim()) {
     throw ApiError.badRequest('Account name is required');
@@ -89,6 +90,22 @@ const create = async (data) => {
     throw ApiError.badRequest('An account with this name already exists');
   }
 
+  // Validate and format PAN Card Number
+  const formattedPan = panCardNumber ? panCardNumber.trim().toUpperCase() : null;
+  if (formattedPan) {
+    const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+    if (!panRegex.test(formattedPan)) {
+      throw ApiError.badRequest('Invalid PAN Card Number format. It must be 10 characters (e.g. ABCDE1234F).');
+    }
+
+    const duplicatePan = await prisma.account.findFirst({
+      where: { panCardNumber: { equals: formattedPan, mode: 'insensitive' } },
+    });
+    if (duplicatePan) {
+      throw ApiError.badRequest('An account with this PAN Card Number already exists');
+    }
+  }
+
   const balance = parseFloat(openingBalance) || 0;
 
   const account = await prisma.account.create({
@@ -98,6 +115,7 @@ const create = async (data) => {
       accountNumber: accountNumber?.trim() || null,
       branch: branch?.trim() || null,
       ifscCode: ifscCode?.trim() || null,
+      panCardNumber: formattedPan,
       openingBalance: balance,
       currentBalance: balance,
       notes: notes?.trim() || null,
@@ -116,7 +134,7 @@ const update = async (id, data) => {
     throw ApiError.notFound('Account not found');
   }
 
-  const { accountName, bankName, accountNumber, branch, ifscCode, notes, isActive } = data;
+  const { accountName, bankName, accountNumber, branch, ifscCode, panCardNumber, notes, isActive } = data;
 
   // Check for duplicate name (exclude current account)
   if (accountName) {
@@ -131,6 +149,28 @@ const update = async (id, data) => {
     }
   }
 
+  // Validate and format PAN Card Number if provided/updated
+  let formattedPan;
+  if (panCardNumber !== undefined) {
+    formattedPan = panCardNumber ? panCardNumber.trim().toUpperCase() : null;
+    if (formattedPan) {
+      const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+      if (!panRegex.test(formattedPan)) {
+        throw ApiError.badRequest('Invalid PAN Card Number format. It must be 10 characters (e.g. ABCDE1234F).');
+      }
+
+      const duplicatePan = await prisma.account.findFirst({
+        where: {
+          panCardNumber: { equals: formattedPan, mode: 'insensitive' },
+          NOT: { id },
+        },
+      });
+      if (duplicatePan) {
+        throw ApiError.badRequest('An account with this PAN Card Number already exists');
+      }
+    }
+  }
+
   const account = await prisma.account.update({
     where: { id },
     data: {
@@ -139,6 +179,7 @@ const update = async (id, data) => {
       ...(accountNumber !== undefined && { accountNumber: accountNumber?.trim() || null }),
       ...(branch !== undefined && { branch: branch?.trim() || null }),
       ...(ifscCode !== undefined && { ifscCode: ifscCode?.trim() || null }),
+      ...(panCardNumber !== undefined && { panCardNumber: formattedPan }),
       ...(notes !== undefined && { notes: notes?.trim() || null }),
       ...(isActive !== undefined && { isActive }),
     },

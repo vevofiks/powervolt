@@ -9,6 +9,7 @@ const initialState = {
   accountNumber: '',
   branch: '',
   ifscCode: '',
+  panCardNumber: '',
   openingBalance: '',
   notes: '',
 };
@@ -26,6 +27,7 @@ export default function AccountForm({ account, onSubmit, onCancel, loading }) {
         accountNumber: account.accountNumber || '',
         branch: account.branch || '',
         ifscCode: account.ifscCode || '',
+        panCardNumber: account.panCardNumber || '',
         openingBalance: account.openingBalance?.toString() || '0',
         notes: account.notes || '',
       });
@@ -38,12 +40,21 @@ export default function AccountForm({ account, onSubmit, onCancel, loading }) {
     if (form.openingBalance && isNaN(parseFloat(form.openingBalance))) {
       newErrors.openingBalance = 'Must be a valid number';
     }
+    if (form.panCardNumber.trim()) {
+      const panRegex = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+      if (!panRegex.test(form.panCardNumber.trim())) {
+        newErrors.panCardNumber = 'Invalid PAN format. Expected format: ABCDE1234F';
+      }
+    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    let { name, value } = e.target;
+    if (name === 'panCardNumber') {
+      value = value.toUpperCase();
+    }
     setForm((prev) => ({ ...prev, [name]: value }));
     if (errors[name]) setErrors((prev) => ({ ...prev, [name]: '' }));
   };
@@ -98,6 +109,16 @@ export default function AccountForm({ account, onSubmit, onCancel, loading }) {
           placeholder="Optional"
           value={form.ifscCode}
           onChange={handleChange}
+        />
+        <Input
+          label="PAN Card Number"
+          name="panCardNumber"
+          placeholder="Optional (e.g., ABCDE1234F)"
+          value={form.panCardNumber}
+          onChange={handleChange}
+          error={errors.panCardNumber}
+          maxLength={10}
+          id="input-pan-card-number"
         />
         <Input
           label={isEdit ? 'Opening Balance (read-only)' : 'Opening Balance (₹)'}

@@ -159,6 +159,7 @@ export default function Accounts() {
     { key: 'accountName', label: 'Account Name', render: (val) => <span className="font-semibold">{val}</span> },
     { key: 'bankName', label: 'Bank', render: (val) => val || '—' },
     { key: 'accountNumber', label: 'Account No.', render: (val) => val || '—' },
+    { key: 'panCardNumber', label: 'PAN', render: (val) => val || '—' },
     { key: 'openingBalance', label: 'Opening Bal.', align: 'right', render: (val) => formatCurrency(val) },
     { key: 'currentBalance', label: 'Current Bal.', align: 'right', render: (val) => (
       <span className={val >= 0 ? 'text-success' : 'text-danger'}>{formatCurrency(val)}</span>

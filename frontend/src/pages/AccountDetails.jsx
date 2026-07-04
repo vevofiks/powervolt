@@ -68,7 +68,7 @@ export default function AccountDetails() {
     <div className="page-wrapper">
       <PageHeader
         title={account.accountName}
-        subtitle={`${account.bankName || 'Personal'} — ${account.accountNumber || 'N/A'}`}
+        subtitle={`${account.bankName || 'Personal'} — ${account.accountNumber || 'N/A'}${account.panCardNumber ? ` | PAN: ${account.panCardNumber}` : ''}`}
         actionLabel="Back to Accounts"
         actionIcon={HiOutlineChevronLeft}
         onAction={() => navigate('/admin/accounts')}
@@ -117,6 +117,10 @@ export default function AccountDetails() {
                 <div className="info-item">
                   <span className="info-label">Account Number</span>
                   <span className="info-value">{account.accountNumber || '—'}</span>
+                </div>
+                <div className="info-item">
+                  <span className="info-label">PAN Card Number</span>
+                  <span className="info-value">{account.panCardNumber || '—'}</span>
                 </div>
                 <div className="info-item">
                   <span className="info-label">Status</span>

@@ -267,6 +267,7 @@ model Account {
   accountNumber  String?
   branch         String?
   ifscCode       String?
+  panCardNumber  String?  @unique
   openingBalance Float    @default(0)
   currentBalance Float    @default(0)
   notes          String?
