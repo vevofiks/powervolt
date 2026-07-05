@@ -42,10 +42,19 @@ const deleteBill = catchAsync(async (req, res) => {
   });
 });
 
+const updateBill = catchAsync(async (req, res) => {
+  const bill = await purchaseBillService.updateBill(req.params.id, req.body);
+  res.status(200).json({
+    success: true,
+    data: bill,
+  });
+});
+
 module.exports = {
   createBill,
   getAllBills,
   getBillById,
   updatePaymentStatus,
   deleteBill,
+  updateBill,
 };

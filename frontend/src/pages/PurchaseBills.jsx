@@ -10,7 +10,7 @@ import LoadingSkeleton from '../components/ui/LoadingSkeleton';
 import { purchaseBillApi } from '../api/purchaseBills';
 import { formatCurrency } from '../utils/formatCurrency';
 import { formatDate } from '../utils/formatDate';
-import { HiOutlinePlus, HiOutlineEye, HiOutlineSearch, HiOutlineTrash } from 'react-icons/hi';
+import { HiOutlinePlus, HiOutlineEye, HiOutlineSearch, HiOutlineTrash, HiOutlinePencil } from 'react-icons/hi';
 
 export default function PurchaseBills() {
   const navigate = useNavigate();
@@ -84,6 +84,16 @@ export default function PurchaseBills() {
           title="View Bill"
         >
           <HiOutlineEye size={18} />
+        </button>
+        <button 
+          className="text-gray-500 hover:text-primary transition-colors p-1" 
+          onClick={(e) => {
+            e.stopPropagation();
+            navigate(`/admin/purchase-bills/edit/${id}`);
+          }} 
+          title="Edit Bill"
+        >
+          <HiOutlinePencil size={18} />
         </button>
         <button 
           className="text-red-500 hover:text-red-700 transition-colors p-1" 

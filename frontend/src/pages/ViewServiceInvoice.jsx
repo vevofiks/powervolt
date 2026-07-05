@@ -7,7 +7,7 @@ import Button from '../components/ui/Button';
 import LoadingSkeleton from '../components/ui/LoadingSkeleton';
 import { serviceInvoiceApi } from '../api/serviceInvoices';
 import { settingApi } from '../api/settings';
-import { HiOutlinePrinter, HiOutlineArrowLeft } from 'react-icons/hi';
+import { HiOutlinePrinter, HiOutlineArrowLeft, HiOutlinePencil } from 'react-icons/hi';
 import { formatDate } from '../utils/formatDate';
 import './ServiceInvoicePrint.css';
 
@@ -66,7 +66,10 @@ export default function ViewServiceInvoice() {
         onAction={() => navigate('/admin/service-invoice')}
       />
 
-      <div className="print-actions mb-4 flex justify-end">
+      <div className="print-actions mb-4 flex justify-end gap-2" style={{ display: 'flex', gap: '8px' }}>
+        <Button onClick={() => navigate(`/admin/service-invoice/edit/${id}`)} icon={HiOutlinePencil} variant="secondary" size="lg">
+          Edit Invoice
+        </Button>
         <Button onClick={handlePrint} icon={HiOutlinePrinter} size="lg">
           Print Service Invoice
         </Button>

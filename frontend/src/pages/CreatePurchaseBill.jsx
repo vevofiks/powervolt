@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useCallback } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/ui/PageHeader';
 import Card from '../components/ui/Card';
@@ -19,7 +19,10 @@ import { HiOutlinePlus, HiOutlineTrash, HiOutlineSave, HiOutlineArrowLeft, HiOut
 import '../pages/CreateSalesInvoice.css'; // Reusing similar styles
 
 export default function CreatePurchaseBill() {
+  const { id } = useParams();
   const navigate = useNavigate();
+  const isEditMode = !!id;
+
   const [loading, setLoading] = useState(false);
   const [accounts, setAccounts] = useState([]);
   const [isVendorModalOpen, setIsVendorModalOpen] = useState(false);
@@ -43,8 +46,9 @@ export default function CreatePurchaseBill() {
     paymentStatus: 'PAID'
   });
 
-  // Load draft on mount
+  // Load draft on mount (only for new bills)
   useEffect(() => {
+    if (isEditMode) return;
     const savedDraft = localStorage.getItem('purchaseBillDraft');
     if (savedDraft) {
       try {
@@ -58,30 +62,67 @@ export default function CreatePurchaseBill() {
         localStorage.removeItem('purchaseBillDraft');
       }
     }
-  }, []);
+  }, [isEditMode]);
 
-  // Auto-save draft when bill changes
+  // Auto-save draft when bill changes (only for new bills)
   useEffect(() => {
+    if (isEditMode) return;
     if (bill.vendorName || bill.items.some(i => i.productName)) {
       localStorage.setItem('purchaseBillDraft', JSON.stringify(bill));
     }
-  }, [bill]);
+  }, [bill, isEditMode]);
 
-  useEffect(() => {
-    fetchAccounts();
-  }, []);
-
-  const fetchAccounts = async () => {
+  const initData = useCallback(async () => {
+    setLoading(true);
     try {
-      const res = await accountApi.getAll();
-      setAccounts(res.data?.items || []);
-      if (res.data?.items?.length > 0) {
-        setBill(prev => ({ ...prev, accountId: res.data.items[0].id }));
+      const accountsRes = await accountApi.getAll();
+      const accountsList = accountsRes.data?.items || [];
+      setAccounts(accountsList);
+
+      if (isEditMode) {
+        const billRes = await purchaseBillApi.getById(id);
+        const billData = billRes.data;
+        setBill({
+          billNo: billData.billNo,
+          billType: billData.billType || 'NON_GST',
+          vendorId: billData.vendorId || '',
+          vendorName: billData.vendorName || '',
+          vendorPhone: billData.vendorPhone || '',
+          vendorGstNumber: billData.vendorGstNumber || '',
+          items: billData.items.map(item => ({
+            id: item.id,
+            productId: item.productId || '',
+            productName: item.productName || '',
+            sku: item.sku || '',
+            hsnCode: item.hsnCode || '',
+            qty: item.qty || 1,
+            purchasePrice: item.purchasePrice || 0,
+            salePrice: item.salePrice || 0,
+            amount: item.amount || 0
+          })),
+          accountId: billData.accountId || '',
+          discount: billData.discount || 0,
+          notes: billData.notes || '',
+          terms: billData.terms || '',
+          date: new Date(billData.date).toISOString().split('T')[0],
+          paymentStatus: billData.paymentStatus || 'PAID'
+        });
+      } else {
+        if (accountsList.length > 0) {
+          setBill(prev => ({ ...prev, accountId: accountsList[0].id }));
+        }
       }
     } catch (err) {
-      toast.error('Failed to load accounts');
+      toast.error('Failed to load required details');
+      navigate('/admin/purchase-bills');
+    } finally {
+      setLoading(false);
     }
-  };
+  }, [id, isEditMode, navigate]);
+
+  useEffect(() => {
+    initData();
+  }, [initData]);
 
   // ─── Vendor Selection ───────────────────────────────────────
   const handleVendorInputChange = (val) => {
@@ -231,12 +272,17 @@ export default function CreatePurchaseBill() {
     setLoading(true);
     try {
       const payload = { ...bill, subtotal, taxAmount, totalAmount };
-      await purchaseBillApi.create(payload);
-      toast.success('Purchase Bill created successfully');
-      localStorage.removeItem('purchaseBillDraft');
+      if (isEditMode) {
+        await purchaseBillApi.update(id, payload);
+        toast.success('Purchase Bill updated successfully');
+      } else {
+        await purchaseBillApi.create(payload);
+        toast.success('Purchase Bill created successfully');
+        localStorage.removeItem('purchaseBillDraft');
+      }
       navigate('/admin/purchase-bills');
     } catch (err) {
-      toast.error(err.response?.data?.message || err.message || 'Failed to create purchase bill');
+      toast.error(err.response?.data?.message || err.message || `Failed to ${isEditMode ? 'update' : 'create'} purchase bill`);
     } finally {
       setLoading(false);
     }
@@ -245,8 +291,8 @@ export default function CreatePurchaseBill() {
   return (
     <div className="page-wrapper create-invoice">
       <PageHeader
-        title="Create Purchase Bill"
-        subtitle="Record vendor purchases, manage stock and ledgers"
+        title={isEditMode ? 'Edit Purchase Bill' : 'Create Purchase Bill'}
+        subtitle={isEditMode ? 'Modify vendor purchases, stock and ledgers' : 'Record vendor purchases, manage stock and ledgers'}
         actionLabel="Back to History"
         actionIcon={HiOutlineArrowLeft}
         onAction={() => navigate('/admin/purchase-bills')}
@@ -460,7 +506,7 @@ export default function CreatePurchaseBill() {
               </div>
               <div className="invoice-actions">
                 <Button type="submit" loading={loading} icon={HiOutlineSave} size="lg">
-                  Save Purchase Bill
+                  {isEditMode ? 'Update Purchase Bill' : 'Save Purchase Bill'}
                 </Button>
               </div>
             </Card>

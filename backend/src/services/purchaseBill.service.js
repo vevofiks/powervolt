@@ -294,6 +294,178 @@ class PurchaseBillService {
 
     return true;
   }
+
+  async updateBill(id, data) {
+    const originalBill = await prisma.purchaseBill.findUnique({
+      where: { id },
+      include: { items: true },
+    });
+    if (!originalBill) {
+      throw new ApiError(404, 'Purchase Bill not found');
+    }
+
+    const { vendorId, accountId, items, billNo, date, billType, subtotal, discount, taxAmount, totalAmount, notes, terms, paymentStatus } = data;
+
+    // 1. Revert original Paying Account Balance and delete original Ledger Transaction ONLY if original was PAID
+    if (originalBill.paymentStatus === 'PAID') {
+      const originalAccount = await prisma.account.findUnique({ where: { id: originalBill.accountId } });
+      if (originalAccount) {
+        await prisma.account.update({
+          where: { id: originalBill.accountId },
+          data: {
+            currentBalance: {
+              increment: originalBill.totalAmount,
+            },
+          },
+        });
+      }
+
+      await prisma.ledgerTransaction.deleteMany({
+        where: {
+          OR: [
+            { linkedId: originalBill.id },
+            { referenceNo: originalBill.billNo, moduleType: 'PURCHASE_BILL' },
+          ]
+        },
+      });
+    }
+
+    // 2. Revert Stock for original items
+    for (const item of originalBill.items) {
+      const product = await prisma.product.findUnique({ where: { id: item.productId } });
+      if (product) {
+        await prisma.product.update({
+          where: { id: item.productId },
+          data: {
+            currentStock: {
+              decrement: item.qty,
+            },
+          },
+        });
+
+        await prisma.stockHistory.deleteMany({
+          where: {
+            reference: originalBill.billNo,
+            productId: item.productId,
+          },
+        });
+      }
+    }
+
+    // 3. Delete original items
+    await prisma.purchaseBillItem.deleteMany({
+      where: { billId: id },
+    });
+
+    // 4. Resolve vendor details
+    let vendorName = '';
+    let vendorPhone = '';
+    let vendorGstNumber = '';
+
+    if (vendorId) {
+      const vendor = await prisma.vendor.findUnique({ where: { id: vendorId } });
+      if (vendor) {
+        vendorName = vendor.name;
+        vendorPhone = vendor.phone;
+        vendorGstNumber = vendor.gstNumber;
+      }
+    }
+
+    // 5. Update the PurchaseBill itself (with new values, recreating items)
+    const bill = await prisma.purchaseBill.update({
+      where: { id },
+      data: {
+        date: date ? new Date(date) : originalBill.date,
+        billType: billType || 'NON_GST',
+        vendorId,
+        vendorName,
+        vendorPhone,
+        vendorGstNumber,
+        accountId,
+        subtotal: parseFloat(subtotal) || 0,
+        discount: parseFloat(discount) || 0,
+        taxAmount: parseFloat(taxAmount) || 0,
+        totalAmount: parseFloat(totalAmount) || 0,
+        notes,
+        terms,
+        paymentStatus: paymentStatus || 'PAID',
+        items: {
+          create: items.map((item) => ({
+            productId: item.productId,
+            productName: item.productName,
+            sku: item.sku,
+            hsnCode: item.hsnCode,
+            qty: parseFloat(item.qty),
+            purchasePrice: parseFloat(item.purchasePrice),
+            salePrice: parseFloat(item.salePrice),
+            amount: parseFloat(item.amount),
+          })),
+        },
+      },
+      include: {
+        items: true,
+      },
+    });
+
+    // 6. Update Paying Account Balance and Create Ledger Transaction ONLY if new status is PAID
+    if (bill.paymentStatus === 'PAID') {
+      const updatedAccount = await prisma.account.update({
+        where: { id: accountId },
+        data: {
+          currentBalance: {
+            decrement: bill.totalAmount,
+          },
+        },
+      });
+
+      await prisma.ledgerTransaction.create({
+        data: {
+          accountId,
+          date: bill.date,
+          referenceNo: bill.billNo,
+          moduleType: 'PURCHASE_BILL',
+          description: `Purchase Bill ${vendorName ? 'from ' + vendorName : ''} (Edited)`,
+          credit: 0,
+          debit: bill.totalAmount, // Money out
+          balanceAfter: updatedAccount.currentBalance,
+          linkedId: bill.id,
+        },
+      });
+    }
+
+    // 7. Update Product Stocks and Stock History sequentially for new items
+    for (const item of bill.items) {
+      const product = await prisma.product.findUnique({ where: { id: item.productId } });
+      if (product) {
+        const updatedProduct = await prisma.product.update({
+          where: { id: item.productId },
+          data: {
+            currentStock: {
+              increment: item.qty,
+            },
+            purchasePrice: item.purchasePrice,
+            salePrice: item.salePrice,
+            hsnCode: item.hsnCode,
+            sku: item.sku,
+          },
+        });
+
+        await prisma.stockHistory.create({
+          data: {
+            productId: item.productId,
+            type: 'PURCHASE_IN',
+            quantity: item.qty,
+            stockAfter: updatedProduct.currentStock,
+            reference: bill.billNo,
+            remark: `Purchased via Bill No: ${bill.billNo} (Edited)`,
+            date: bill.date,
+          },
+        });
+      }
+    }
+
+    return bill;
+  }
 }
 
 module.exports = new PurchaseBillService();

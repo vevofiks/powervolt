@@ -5,6 +5,7 @@ const serviceInvoiceController = require('../controllers/serviceInvoice.controll
 router.post('/', serviceInvoiceController.create);
 router.get('/', serviceInvoiceController.getAll);
 router.get('/:id', serviceInvoiceController.getById);
+router.put('/:id', serviceInvoiceController.update);
 router.patch('/:id/payment-status', serviceInvoiceController.updatePaymentStatus);
 router.delete('/:id', serviceInvoiceController.remove);
 

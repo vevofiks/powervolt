@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, useCallback } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/ui/PageHeader';
 import Card from '../components/ui/Card';
@@ -15,7 +15,10 @@ import { HiOutlinePlus, HiOutlineTrash, HiOutlineSave, HiOutlineArrowLeft } from
 import './CreateSalesInvoice.css'; // Reusing layout css
 
 export default function CreateServiceInvoice() {
+  const { id } = useParams();
   const navigate = useNavigate();
+  const isEditMode = !!id;
+
   const [loading, setLoading] = useState(false);
   const [accounts, setAccounts] = useState([]);
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
@@ -30,21 +33,46 @@ export default function CreateServiceInvoice() {
     date: new Date().toISOString().split('T')[0]
   });
 
-  useEffect(() => {
-    fetchAccounts();
-  }, []);
-
-  const fetchAccounts = async () => {
+  const initData = useCallback(async () => {
+    setLoading(true);
     try {
-      const res = await accountApi.getAll();
-      setAccounts(res.data?.items || []);
-      if (res.data?.items?.length > 0) {
-        setInvoice(prev => ({ ...prev, accountId: res.data.items[0].id }));
+      const accountsRes = await accountApi.getAll();
+      const accountsList = accountsRes.data?.items || [];
+      setAccounts(accountsList);
+
+      if (isEditMode) {
+        const res = await serviceInvoiceApi.getById(id);
+        const invData = res.data;
+        setInvoice({
+          invoiceNo: invData.invoiceNo,
+          customerId: invData.customerId || '',
+          customerName: invData.customerName || '',
+          items: invData.items.map(item => ({
+            description: item.description,
+            qty: item.qty !== null ? String(item.qty) : '',
+            rate: item.rate !== null ? String(item.rate) : '',
+            amount: String(item.amount)
+          })),
+          accountId: invData.accountId || '',
+          notes: invData.notes || '',
+          date: new Date(invData.date).toISOString().split('T')[0]
+        });
+      } else {
+        if (accountsList.length > 0) {
+          setInvoice(prev => ({ ...prev, accountId: accountsList[0].id }));
+        }
       }
     } catch (err) {
-      toast.error('Failed to load accounts');
+      toast.error('Failed to load required details');
+      navigate('/admin/service-invoice');
+    } finally {
+      setLoading(false);
     }
-  };
+  }, [id, isEditMode, navigate]);
+
+  useEffect(() => {
+    initData();
+  }, [initData]);
 
   // ─── Customer Selection ───────────────────────────────────────
   const handleCustomerInputChange = (val) => {
@@ -114,11 +142,16 @@ export default function CreateServiceInvoice() {
     setLoading(true);
     try {
       const payload = { ...invoice, totalAmount };
-      await serviceInvoiceApi.create(payload);
-      toast.success('Service Invoice created successfully');
+      if (isEditMode) {
+        await serviceInvoiceApi.update(id, payload);
+        toast.success('Service Invoice updated successfully');
+      } else {
+        await serviceInvoiceApi.create(payload);
+        toast.success('Service Invoice created successfully');
+      }
       navigate('/admin/service-invoice');
     } catch (err) {
-      toast.error(err.message || 'Failed to create service invoice');
+      toast.error(err.message || `Failed to ${isEditMode ? 'update' : 'create'} service invoice`);
     } finally {
       setLoading(false);
     }
@@ -127,8 +160,8 @@ export default function CreateServiceInvoice() {
   return (
     <div className="page-wrapper create-invoice">
       <PageHeader
-        title="Create Service Invoice"
-        subtitle="Generate a free-text invoice for services rendered"
+        title={isEditMode ? 'Edit Service Invoice' : 'Create Service Invoice'}
+        subtitle={isEditMode ? 'Modify details for services rendered' : 'Generate a free-text invoice for services rendered'}
         actionLabel="Back to History"
         actionIcon={HiOutlineArrowLeft}
         onAction={() => navigate('/admin/service-invoice')}
@@ -254,7 +287,7 @@ export default function CreateServiceInvoice() {
               </div>
               <div className="invoice-actions mt-6">
                 <Button type="submit" loading={loading} icon={HiOutlineSave} size="lg">
-                  Save Service Invoice
+                  {isEditMode ? 'Update Service Invoice' : 'Save Service Invoice'}
                 </Button>
               </div>
             </Card>

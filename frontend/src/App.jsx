@@ -47,6 +47,7 @@ export default function App() {
               <Route path="sales-invoice/edit/:id" element={<CreateSalesInvoice />} />
               <Route path="service-invoice" element={<ServiceInvoices />} />
               <Route path="service-invoice/create" element={<CreateServiceInvoice />} />
+              <Route path="service-invoice/edit/:id" element={<CreateServiceInvoice />} />
               <Route path="service-invoice/:id" element={<ViewServiceInvoice />} />
               <Route path="customers" element={<Customers />} />
               <Route path="customers/:id" element={<CustomerDetails />} />
@@ -54,6 +55,7 @@ export default function App() {
               <Route path="vendors/:id" element={<VendorDetails />} />
               <Route path="purchase-bills" element={<PurchaseBills />} />
               <Route path="purchase-bills/create" element={<CreatePurchaseBill />} />
+              <Route path="purchase-bills/edit/:id" element={<CreatePurchaseBill />} />
               <Route path="purchase-bills/:id" element={<ViewPurchaseBill />} />
               <Route path="products" element={<Products />} />
               <Route path="accounts" element={<Accounts />} />

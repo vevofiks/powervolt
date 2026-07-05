@@ -8,7 +8,7 @@ import Button from '../components/ui/Button';
 import { purchaseBillApi } from '../api/purchaseBills';
 import { formatCurrency } from '../utils/formatCurrency';
 import { formatDate } from '../utils/formatDate';
-import { HiOutlinePrinter, HiOutlineArrowLeft, HiOutlineOfficeBuilding, HiOutlineTrash } from 'react-icons/hi';
+import { HiOutlinePrinter, HiOutlineArrowLeft, HiOutlineOfficeBuilding, HiOutlineTrash, HiOutlinePencil } from 'react-icons/hi';
 import stamp from '../assets/official_stamp.jpg';
 import '../components/sales/InvoicePrint.css'; // Reusing print styles
 
@@ -74,6 +74,7 @@ export default function ViewPurchaseBill() {
         >
           <div className="flex gap-2" style={{ display: 'flex', gap: '8px' }}>
             <Button icon={HiOutlinePrinter} onClick={handlePrint}>Print Bill</Button>
+            <Button variant="secondary" icon={HiOutlinePencil} onClick={() => navigate(`/admin/purchase-bills/edit/${id}`)}>Edit Bill</Button>
             <Button variant="danger" icon={HiOutlineTrash} onClick={handleDelete}>Delete Bill</Button>
           </div>
         </PageHeader>

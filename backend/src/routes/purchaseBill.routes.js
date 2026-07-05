@@ -11,6 +11,7 @@ router
 router
   .route('/:id')
   .get(purchaseBillController.getBillById)
+  .put(purchaseBillController.updateBill)
   .delete(purchaseBillController.deleteBill);
 
 router.patch('/:id/payment-status', purchaseBillController.updatePaymentStatus);

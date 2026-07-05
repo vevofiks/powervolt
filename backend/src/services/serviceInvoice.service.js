@@ -162,6 +162,87 @@ class ServiceInvoiceService {
     await prisma.serviceInvoice.delete({ where: { id } });
     return true;
   }
+
+  async update(id, data) {
+    const originalInvoice = await prisma.serviceInvoice.findUnique({
+      where: { id },
+      include: { items: true }
+    });
+    if (!originalInvoice) throw new ApiError(404, 'Service Invoice not found');
+
+    const { customerId, customerName, accountId, items, invoiceNo, date, totalAmount, notes, paymentStatus } = data;
+
+    // Validate Account
+    const account = await prisma.account.findUnique({ where: { id: accountId } });
+    if (!account) throw new ApiError(404, 'Receiving account not found');
+
+    // 1. Revert original Paying Account Balance if it was PAID
+    if (originalInvoice.paymentStatus === 'PAID') {
+      const originalAccount = await prisma.account.findUnique({ where: { id: originalInvoice.accountId } });
+      if (originalAccount) {
+        await prisma.account.update({
+          where: { id: originalInvoice.accountId },
+          data: { currentBalance: { decrement: originalInvoice.totalAmount } }
+        });
+      }
+
+      await prisma.ledgerTransaction.deleteMany({
+        where: { linkedId: originalInvoice.id }
+      });
+    }
+
+    // 2. Delete original items
+    await prisma.serviceInvoiceItem.deleteMany({
+      where: { serviceInvoiceId: id }
+    });
+
+    // 3. Update Service Invoice and recreate items
+    const invoice = await prisma.serviceInvoice.update({
+      where: { id },
+      data: {
+        date: date ? new Date(date) : originalInvoice.date,
+        customerId: customerId || null,
+        customerName,
+        accountId,
+        totalAmount: parseFloat(totalAmount) || 0,
+        notes,
+        paymentStatus: paymentStatus || 'PENDING',
+        items: {
+          create: items.map(i => ({
+            description: i.description,
+            qty: i.qty !== undefined && i.qty !== null && i.qty !== '' ? parseFloat(i.qty) : null,
+            rate: i.rate !== undefined && i.rate !== null && i.rate !== '' ? parseFloat(i.rate) : null,
+            amount: parseFloat(i.amount),
+          }))
+        }
+      },
+      include: { items: true }
+    });
+
+    // 4. Update Paying Account Balance & Ledger Transaction if new status is PAID
+    if ((paymentStatus || 'PENDING') === 'PAID') {
+      const updatedAccount = await prisma.account.update({
+        where: { id: accountId },
+        data: { currentBalance: { increment: invoice.totalAmount } }
+      });
+
+      await prisma.ledgerTransaction.create({
+        data: {
+          accountId,
+          date: invoice.date,
+          referenceNo: invoice.invoiceNo,
+          moduleType: 'SALES_INVOICE',
+          description: `Service Invoice ${customerName ? 'to ' + customerName : ''} (Edited)`,
+          credit: invoice.totalAmount,
+          debit: 0,
+          balanceAfter: updatedAccount.currentBalance,
+          linkedId: invoice.id,
+        }
+      });
+    }
+
+    return invoice;
+  }
 }
 
 module.exports = new ServiceInvoiceService();
