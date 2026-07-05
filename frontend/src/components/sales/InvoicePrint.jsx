@@ -222,7 +222,7 @@ export default function InvoicePrint({ invoice }) {
             <p>Name: {invoice.account?.accountName || 'POWER VOLT'}</p>
             <p>A/C No: {invoice.account?.accountNumber || '13650200030606'}</p>
             <p>IFSC: {invoice.account?.ifscCode || 'FDRL0001365'}</p>
-            <p>PAN: {settings?.companyPan || 'ANAPL6617R'}</p>
+            <p>PAN: {invoice.account?.panCardNumber || settings?.companyPan || 'ANAPL6617R'}</p>
           </div>
 
 
