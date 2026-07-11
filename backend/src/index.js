@@ -19,7 +19,7 @@ app.use(compression());
 // ─────────────────────────────────────────────────────────────
 
 const allowedOrigins = [
-    'https://powervolt-lilac.vercel.app',
+'https://powervolt-lilac.vercel.app',
   'http://localhost:5173',
   'http://localhost:5174'
 ];
