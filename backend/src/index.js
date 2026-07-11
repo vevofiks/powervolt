@@ -103,6 +103,25 @@ app.get('/health', (_req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────
+// CORS Error Handler (must be before global error handler)
+// When an origin is rejected, cors() calls next(err). Without
+// this, the global errorHandler sends a response with NO
+// Access-Control-Allow-Origin header, which the browser flags
+// as a CORS failure even though it's actually a 403.
+// ─────────────────────────────────────────────────────────────
+
+app.use((err, req, res, next) => {
+  if (err.message && err.message.startsWith('CORS not allowed')) {
+    return res.status(403).json({
+      success: false,
+      statusCode: 403,
+      message: `Forbidden: ${err.message}`,
+    });
+  }
+  next(err);
+});
+
+// ─────────────────────────────────────────────────────────────
 // Global Error Handler
 // ─────────────────────────────────────────────────────────────
 
