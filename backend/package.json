@@ -4,6 +4,7 @@
   "description": "Power Volt Business Management API",
   "main": "src/index.js",
   "scripts": {
+    "build": "npx prisma generate",
     "dev": "nodemon src/index.js",
     "start": "node src/index.js",
     "prod": "pm2-runtime start ecosystem.config.js --env production",
