@@ -19,35 +19,43 @@ app.use(compression());
 // ─────────────────────────────────────────────────────────────
 
 const allowedOrigins = [
+  'http://localhost:5173',
   'http://localhost:5174',
   'https://powervolt-lilac.vercel.app',
 ];
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    // allow requests with no origin (mobile apps, postman, curl)
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error(`CORS not allowed for origin: ${origin}`));
+  },
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+  optionsSuccessStatus: 200, // some legacy browsers choke on 204
+};
 
 // ─────────────────────────────────────────────────────────────
 // Middleware
 // ─────────────────────────────────────────────────────────────
 
+// CORS must come BEFORE helmet so preflight OPTIONS responses
+// carry the correct Access-Control-Allow-Origin header.
+app.use(cors(corsOptions));
+
+// Explicitly handle preflight for every route so OPTIONS requests
+// are short-circuited before any other middleware can interfere.
+app.options('*', cors(corsOptions));
+
 app.use(
   helmet({
     crossOriginResourcePolicy: false,
-  })
-);
-
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      // allow requests with no origin (mobile apps, postman, curl)
-      if (!origin) return callback(null, true);
-
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-
-      return callback(new Error('CORS not allowed'));
-    },
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true,
   })
 );
 
