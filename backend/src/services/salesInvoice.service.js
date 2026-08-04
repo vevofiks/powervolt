@@ -9,6 +9,42 @@ const stockService = require('./stock.service');
 const ledgerService = require('./ledger.service');
 
 /**
+ * Safely resolves or creates a Customer profile and returns a valid customerId or null.
+ */
+const resolveCustomer = async (customerId, customerName, customerPhone, customerPayload) => {
+  let finalCustomerId = (customerId && typeof customerId === 'string' && customerId.trim() !== '') ? customerId.trim() : null;
+
+  if (finalCustomerId) {
+    const existing = await prisma.customer.findUnique({ where: { id: finalCustomerId } });
+    if (existing) {
+      if (customerPayload.name) {
+        await prisma.customer.update({ where: { id: finalCustomerId }, data: customerPayload });
+      }
+      return finalCustomerId;
+    }
+    finalCustomerId = null;
+  }
+
+  if (customerPhone && customerPhone.trim() !== '') {
+    const existingByPhone = await prisma.customer.findFirst({ where: { phone: customerPhone.trim() } });
+    if (existingByPhone) {
+      if (customerPayload.name) {
+        await prisma.customer.update({ where: { id: existingByPhone.id }, data: customerPayload });
+      }
+      return existingByPhone.id;
+    }
+  }
+
+  if (customerName && customerName.trim() !== '') {
+    const newCustomer = await prisma.customer.create({ data: customerPayload });
+    return newCustomer.id;
+  }
+
+  return null;
+};
+
+
+/**
  * Get all sales invoices with search and filters.
  * Uses sequential queries for serverless stability.
  */
@@ -181,7 +217,6 @@ const create = async (data) => {
   }
 
   // 5. Create/Update Customer Profile
-  let finalCustomerId = customerId;
   const customerPayload = {
     name: customerName,
     phone: customerPhone,
@@ -192,19 +227,7 @@ const create = async (data) => {
     state: customerState,
     pincode: customerPincode
   };
-
-  if (finalCustomerId) {
-    await prisma.customer.update({ where: { id: finalCustomerId }, data: customerPayload });
-  } else if (customerName && customerPhone) {
-    const existing = await prisma.customer.findFirst({ where: { phone: customerPhone } });
-    if (existing) {
-      finalCustomerId = existing.id;
-      await prisma.customer.update({ where: { id: finalCustomerId }, data: customerPayload });
-    } else {
-      const newCustomer = await prisma.customer.create({ data: customerPayload });
-      finalCustomerId = newCustomer.id;
-    }
-  }
+  const finalCustomerId = await resolveCustomer(customerId, customerName, customerPhone, customerPayload);
 
   // 6. Save Invoice
   const invoice = await prisma.salesInvoice.create({
@@ -374,7 +397,6 @@ const update = async (id, data) => {
   }
 
   // 6. Update Customer Profile
-  let finalCustomerId = customerId;
   const customerPayload = {
     name: customerName,
     phone: customerPhone,
@@ -385,19 +407,7 @@ const update = async (id, data) => {
     state: customerState,
     pincode: customerPincode
   };
-
-  if (finalCustomerId) {
-    await prisma.customer.update({ where: { id: finalCustomerId }, data: customerPayload });
-  } else if (customerName && customerPhone) {
-    const existing = await prisma.customer.findFirst({ where: { phone: customerPhone } });
-    if (existing) {
-      finalCustomerId = existing.id;
-      await prisma.customer.update({ where: { id: finalCustomerId }, data: customerPayload });
-    } else {
-      const newCustomer = await prisma.customer.create({ data: customerPayload });
-      finalCustomerId = newCustomer.id;
-    }
-  }
+  const finalCustomerId = await resolveCustomer(customerId, customerName, customerPhone, customerPayload);
 
   // 7. Save updated Invoice
   const invoice = await prisma.salesInvoice.update({
