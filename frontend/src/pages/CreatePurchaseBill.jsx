@@ -194,7 +194,7 @@ export default function CreatePurchaseBill() {
   const handleQuickAddProduct = async (productData) => {
     setProductSubmitting(true);
     try {
-      const res = await productApi.create(productData);
+      const res = await productApi.create({ ...productData, currentStock: 0 });
       const newProduct = res.data;
 
       if (productModalIndex !== null) {

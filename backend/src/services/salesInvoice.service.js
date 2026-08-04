@@ -185,38 +185,12 @@ const create = async (data) => {
       amount: itemAmount,
       itemType: isService ? 'SERVICE' : 'PRODUCT'
     });
-
-    if (!isService) {
-      // 3. Update Stock — sequential call per item
-      await stockService.recordMovement({
-        productId: item.productId,
-        type: 'SALE_OUT',
-        quantity: item.qty,
-        reference: invoiceNo,
-        remark: `Sale Invoice ${invoiceNo}`,
-        date: date || new Date()
-      });
-    }
   }
 
   const totalAmount = subtotal + taxAmount - (parseFloat(discount) || 0);
-
   const finalPaymentStatus = paymentStatus || 'PENDING';
 
-  // 4. Record Ledger Transaction (Credit account for sale) ONLY if PAID
-  if (finalPaymentStatus === 'PAID') {
-    await ledgerService.recordTransaction({
-      accountId,
-      date: date || new Date(),
-      referenceNo: invoiceNo,
-      moduleType: 'SALES_INVOICE',
-      description: `Sales Invoice ${invoiceNo} for ${customerName || 'Walk-in Customer'}`,
-      credit: totalAmount,
-      linkedId: null
-    });
-  }
-
-  // 5. Create/Update Customer Profile
+  // 3. Create/Update Customer Profile
   const customerPayload = {
     name: customerName,
     phone: customerPhone,
@@ -229,7 +203,7 @@ const create = async (data) => {
   };
   const finalCustomerId = await resolveCustomer(customerId, customerName, customerPhone, customerPayload);
 
-  // 6. Save Invoice
+  // 4. Save Invoice First
   const invoice = await prisma.salesInvoice.create({
     data: {
       invoiceNo,
@@ -257,6 +231,33 @@ const create = async (data) => {
     },
     include: { items: true }
   });
+
+  // 5. Update Stock (ONLY after invoice is successfully created)
+  for (const item of items) {
+    if (item.itemType !== 'SERVICE') {
+      await stockService.recordMovement({
+        productId: item.productId,
+        type: 'SALE_OUT',
+        quantity: item.qty,
+        reference: invoiceNo,
+        remark: `Sale Invoice ${invoiceNo}`,
+        date: date || new Date()
+      });
+    }
+  }
+
+  // 6. Record Ledger Transaction ONLY if PAID
+  if (finalPaymentStatus === 'PAID') {
+    await ledgerService.recordTransaction({
+      accountId,
+      date: date || new Date(),
+      referenceNo: invoiceNo,
+      moduleType: 'SALES_INVOICE',
+      description: `Sales Invoice ${invoiceNo} for ${customerName || 'Walk-in Customer'}`,
+      credit: totalAmount,
+      linkedId: invoice.id
+    });
+  }
 
   return invoice;
 };
