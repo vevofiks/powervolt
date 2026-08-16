@@ -18,10 +18,20 @@ app.use(compression());
 // Allowed Frontend Origins
 // ─────────────────────────────────────────────────────────────
 
+const envOrigins = [
+  process.env.FRONTEND_URL,
+  process.env.CLIENT_URL,
+  process.env.ALLOWED_ORIGINS,
+]
+  .filter(Boolean)
+  .flatMap((val) => val.split(',').map((u) => u.trim()));
+
 const allowedOrigins = [
-'https://powervolt-lilac.vercel.app',
+  'https://powervolt-lilac.vercel.app',
   'http://localhost:5173',
-  'http://localhost:5174'
+  'http://localhost:5174',
+  'http://localhost:3000',
+  ...envOrigins,
 ];
 
 const corsOptions = {
@@ -29,7 +39,13 @@ const corsOptions = {
     // allow requests with no origin (mobile apps, postman, curl)
     if (!origin) return callback(null, true);
 
-    if (allowedOrigins.includes(origin)) {
+    let isVercelDomain = false;
+    try {
+      const parsed = new URL(origin);
+      isVercelDomain = parsed.hostname.endsWith('.vercel.app') || parsed.hostname === 'vercel.app';
+    } catch (_) {}
+
+    if (allowedOrigins.includes(origin) || isVercelDomain || process.env.NODE_ENV !== 'production') {
       return callback(null, true);
     }
 
