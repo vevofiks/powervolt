@@ -5,7 +5,7 @@ import PageHeader from '../components/ui/PageHeader';
 import Card from '../components/ui/Card';
 import DataTable from '../components/ui/DataTable';
 import Badge from '../components/ui/Badge';
-import Button from '../components/ui/Button';
+import TableActions from '../components/ui/TableActions';
 import LoadingSkeleton from '../components/ui/LoadingSkeleton';
 import { customerApi } from '../api/customers';
 import { formatCurrency } from '../utils/formatCurrency';
@@ -44,8 +44,8 @@ export default function CustomerDetails() {
     { key: 'date', label: 'Date', render: (val) => formatDate(val) },
     { key: 'invoiceType', label: 'Type', render: (val) => <Badge variant={val === 'GST' ? 'primary' : 'secondary'}>{val}</Badge> },
     { key: 'totalAmount', label: 'Amount', align: 'right', render: (val) => formatCurrency(val) },
-    { key: 'id', label: 'Actions', align: 'right', render: (id) => (
-      <Button size="sm" variant="secondary" onClick={() => navigate(`/admin/sales-invoice`)}>View</Button>
+    { key: 'id', label: 'Actions', align: 'right', render: (invoiceId) => (
+      <TableActions onView={() => navigate(`/admin/sales-invoice/${invoiceId}`)} />
     )},
   ];
 

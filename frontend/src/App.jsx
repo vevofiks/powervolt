@@ -7,6 +7,7 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import SalesInvoice from './pages/SalesInvoice';
 import CreateSalesInvoice from './pages/CreateSalesInvoice';
+import ViewSalesInvoice from './pages/ViewSalesInvoice';
 import ServiceInvoices from './pages/ServiceInvoices';
 import CreateServiceInvoice from './pages/CreateServiceInvoice';
 import ViewServiceInvoice from './pages/ViewServiceInvoice';
@@ -45,6 +46,7 @@ export default function App() {
               <Route path="sales-invoice" element={<SalesInvoice />} />
               <Route path="sales-invoice/create" element={<CreateSalesInvoice />} />
               <Route path="sales-invoice/edit/:id" element={<CreateSalesInvoice />} />
+              <Route path="sales-invoice/:id" element={<ViewSalesInvoice />} />
               <Route path="service-invoice" element={<ServiceInvoices />} />
               <Route path="service-invoice/create" element={<CreateServiceInvoice />} />
               <Route path="service-invoice/edit/:id" element={<CreateServiceInvoice />} />

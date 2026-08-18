@@ -4,13 +4,13 @@ import toast from 'react-hot-toast';
 import PageHeader from '../components/ui/PageHeader';
 import Card from '../components/ui/Card';
 import DataTable from '../components/ui/DataTable';
-import Button from '../components/ui/Button';
 import Badge from '../components/ui/Badge';
 import LoadingSkeleton from '../components/ui/LoadingSkeleton';
 import { purchaseBillApi } from '../api/purchaseBills';
 import { formatCurrency } from '../utils/formatCurrency';
 import { formatDate } from '../utils/formatDate';
-import { HiOutlinePlus, HiOutlineEye, HiOutlineSearch, HiOutlineTrash, HiOutlinePencil } from 'react-icons/hi';
+import TableActions from '../components/ui/TableActions';
+import { HiOutlinePlus, HiOutlineSearch } from 'react-icons/hi';
 
 export default function PurchaseBills() {
   const navigate = useNavigate();
@@ -77,35 +77,11 @@ export default function PurchaseBills() {
       </select>
     )},
     { key: 'id', label: 'Actions', align: 'right', render: (id) => (
-      <div className="flex gap-2 justify-end" style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-        <button 
-          className="text-gray-500 hover:text-primary transition-colors p-1" 
-          onClick={() => navigate(`/admin/purchase-bills/${id}`)} 
-          title="View Bill"
-        >
-          <HiOutlineEye size={18} />
-        </button>
-        <button 
-          className="text-gray-500 hover:text-primary transition-colors p-1" 
-          onClick={(e) => {
-            e.stopPropagation();
-            navigate(`/admin/purchase-bills/edit/${id}`);
-          }} 
-          title="Edit Bill"
-        >
-          <HiOutlinePencil size={18} />
-        </button>
-        <button 
-          className="text-red-500 hover:text-red-700 transition-colors p-1" 
-          onClick={(e) => {
-            e.stopPropagation();
-            handleDelete(id);
-          }} 
-          title="Delete Bill"
-        >
-          <HiOutlineTrash size={18} />
-        </button>
-      </div>
+      <TableActions
+        onView={() => navigate(`/admin/purchase-bills/${id}`)}
+        onEdit={() => navigate(`/admin/purchase-bills/edit/${id}`)}
+        onDelete={() => handleDelete(id)}
+      />
     )},
   ];
 

@@ -1,0 +1,29 @@
+.table-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.table-actions__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  color: #64748b;
+  background: none;
+  border: none;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.table-actions__btn:hover {
+  color: var(--color-primary, #16a34a);
+  background: var(--color-primary-bg, #f0fdf4);
+}
+
+.table-actions__btn--danger:hover {
+  color: #b91c1c;
+  background: #fef2f2;
+}

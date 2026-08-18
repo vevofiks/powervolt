@@ -5,23 +5,18 @@ import PageHeader from '../components/ui/PageHeader';
 import Card from '../components/ui/Card';
 import DataTable from '../components/ui/DataTable';
 import Button from '../components/ui/Button';
-import Modal from '../components/ui/Modal';
+import TableActions from '../components/ui/TableActions';
 import { salesInvoiceApi } from '../api/salesInvoices';
 import { formatCurrency } from '../utils/formatCurrency';
 import { formatDate } from '../utils/formatDate';
-import { HiOutlinePlus, HiOutlinePrinter, HiOutlineTrash, HiOutlineSearch, HiOutlineChat, HiOutlinePencil } from 'react-icons/hi';
-import InvoicePrint from '../components/sales/InvoicePrint';
+import { HiOutlinePlus, HiOutlineSearch, HiOutlineChat } from 'react-icons/hi';
 import './SalesInvoice.css';
-
-
 
 export default function SalesInvoice() {
   const navigate = useNavigate();
   const [invoices, setInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedInvoice, setSelectedInvoice] = useState(null);
-  const [showPrintModal, setShowPrintModal] = useState(false);
   const [page, setPage] = useState(1);
   const [pagination, setPagination] = useState({ totalPages: 1, hasNext: false, hasPrev: false });
 
@@ -65,11 +60,6 @@ export default function SalesInvoice() {
     }
   };
 
-  const handlePrint = (invoice) => {
-    setSelectedInvoice(invoice);
-    setShowPrintModal(true);
-  };
-
   const handleWhatsApp = (invoice) => {
     const phone = invoice.customerPhone || '';
     if (!phone) return toast.error('No customer phone number available');
@@ -93,13 +83,21 @@ export default function SalesInvoice() {
         <option value="PAID">Paid</option>
       </select>
     )},
-    { key: 'id', label: 'Actions', render: (_, row) => (
-      <div className="action-buttons">
-        <button className="action-btn" title="View/Print" onClick={() => handlePrint(row)}><HiOutlinePrinter /></button>
-        <button className="action-btn" title="Edit" onClick={() => navigate(`/admin/sales-invoice/edit/${row.id}`)}><HiOutlinePencil /></button>
-        <button className="action-btn" title="WhatsApp Share" onClick={() => handleWhatsApp(row)}><HiOutlineChat /></button>
-        <button className="action-btn danger" title="Delete" onClick={() => handleDelete(row.id)}><HiOutlineTrash /></button>
-      </div>
+    { key: 'id', label: 'Actions', align: 'right', render: (_, row) => (
+      <TableActions
+        onView={() => navigate(`/admin/sales-invoice/${row.id}`)}
+        onEdit={() => navigate(`/admin/sales-invoice/edit/${row.id}`)}
+        onDelete={() => handleDelete(row.id)}
+      >
+        <button
+          type="button"
+          className="table-actions__btn"
+          title="WhatsApp Share"
+          onClick={() => handleWhatsApp(row)}
+        >
+          <HiOutlineChat size={18} />
+        </button>
+      </TableActions>
     )},
   ];
 
@@ -158,35 +156,6 @@ export default function SalesInvoice() {
           </div>
         )}
       </Card>
-
-      <Modal 
-        isOpen={showPrintModal} 
-        onClose={() => setShowPrintModal(false)} 
-        title="Print Invoice"
-        size="xl"
-      >
-        {selectedInvoice && (
-          <div className="print-modal-content">
-            <div className="print-actions">
-              <Button 
-                onClick={() => {
-                  const originalTitle = document.title;
-                  const safeCustomerName = (selectedInvoice.customerName || 'Customer').replace(/[^a-zA-Z0-9]/g, '_');
-                  document.title = `${safeCustomerName}_${selectedInvoice.invoiceNo}`;
-                  window.print();
-                  document.title = originalTitle;
-                }} 
-                icon={HiOutlinePrinter}
-              >
-                Print Now
-              </Button>
-            </div>
-            <div className="print-preview-container">
-              <InvoicePrint invoice={selectedInvoice} />
-            </div>
-          </div>
-        )}
-      </Modal>
     </div>
   );
 }

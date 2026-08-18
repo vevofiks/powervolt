@@ -9,7 +9,8 @@ import LoadingSkeleton from '../components/ui/LoadingSkeleton';
 import { vendorApi } from '../api/vendors';
 import { formatCurrency } from '../utils/formatCurrency';
 import { formatDate } from '../utils/formatDate';
-import { HiOutlineArrowLeft, HiOutlineOfficeBuilding, HiOutlinePhone, HiOutlineMail, HiOutlineLocationMarker, HiOutlineEye } from 'react-icons/hi';
+import TableActions from '../components/ui/TableActions';
+import { HiOutlineArrowLeft, HiOutlineOfficeBuilding, HiOutlinePhone, HiOutlineMail, HiOutlineLocationMarker } from 'react-icons/hi';
 
 export default function VendorDetails() {
   const { id } = useParams();
@@ -52,9 +53,7 @@ export default function VendorDetails() {
     { key: 'billType', label: 'Type', render: (val) => <Badge variant={val === 'GST' ? 'success' : 'default'}>{val}</Badge> },
     { key: 'totalAmount', label: 'Amount', align: 'right', render: (val) => <span className="font-semibold">{formatCurrency(val)}</span> },
     { key: 'id', label: 'Actions', align: 'right', render: (billId) => (
-      <button className="text-gray-500 hover:text-primary transition-colors p-1" onClick={() => navigate(`/admin/purchase-bills/${billId}`)} title="View Bill">
-        <HiOutlineEye size={18} />
-      </button>
+      <TableActions onView={() => navigate(`/admin/purchase-bills/${billId}`)} />
     )},
   ];
 

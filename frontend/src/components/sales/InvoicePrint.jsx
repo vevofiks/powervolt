@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { formatDate } from '../../utils/formatDate';
-import { formatCurrency } from '../../utils/formatCurrency';
 import { settingApi } from '../../api/settings';
 import stamp from '../../assets/official_stamp.jpg';
 import './InvoicePrint.css';
@@ -48,8 +47,30 @@ function numberToWords(num) {
   return result + ' Only';
 }
 
-export default function InvoicePrint({ invoice }) {
+const VARIANT_CONFIG = {
+  sales: {
+    watermark: 'SALES',
+    partyLabel: 'BILL TO',
+    codeLabel: 'HSN Code',
+    showCodeColumn: true,
+  },
+  service: {
+    watermark: 'SERVICE',
+    partyLabel: 'BILL TO',
+    codeLabel: '',
+    showCodeColumn: false,
+  },
+  purchase: {
+    watermark: 'PURCHASE',
+    partyLabel: 'VENDOR DETAILS',
+    codeLabel: 'SKU',
+    showCodeColumn: true,
+  },
+};
+
+export default function InvoicePrint({ invoice, variant = 'sales' }) {
   const [settings, setSettings] = useState(null);
+  const config = VARIANT_CONFIG[variant] || VARIANT_CONFIG.sales;
 
   useEffect(() => {
     settingApi.get().then(res => setSettings(res.data));
@@ -62,19 +83,37 @@ export default function InvoicePrint({ invoice }) {
   const taxAmount = invoice.taxAmount || 0;
   const cgst = isGst ? (taxAmount / 2) : 0;
   const sgst = isGst ? (taxAmount / 2) : 0;
-  const totalQty = items.reduce((sum, item) => sum + (item.qty || 0), 0);
+  const totalQty = items.reduce((sum, item) => sum + (Number(item.qty) || 0), 0);
+  const subtotal = Number(invoice.subtotal ?? invoice.totalAmount ?? 0);
+  const discount = Number(invoice.discount || 0);
+  const totalAmount = Number(invoice.totalAmount || 0);
 
-  // Unified invoice title (no product/service prefix since bill can have both)
-  const invoiceTitle = isGst ? 'TAX INVOICE' : 'INVOICE';
-  const categoryColor = '#16a34a'; // consistent green brand color
+  const invoiceTitle = variant === 'purchase'
+    ? 'PURCHASE BILL'
+    : (isGst ? 'TAX INVOICE' : 'INVOICE');
+  const categoryColor = '#16a34a';
+
+  const renderItemsColGroup = () => (
+    <colgroup>
+      <col className="col-sl" />
+      <col className="col-product" />
+      {config.showCodeColumn && <col className="col-hsn" />}
+      <col className="col-qty" />
+      <col className="col-rate" />
+      <col className="col-amount" />
+    </colgroup>
+  );
 
   return (
-    <div className="invoice-print-container">
+    <div className="invoice-print-container" data-bill-to-name={invoice.customerName || ''}>
+      {/* ═══ Repeating Print Border Box ═══ */}
+      <div className="print-page-border" style={{ borderColor: categoryColor }} />
+
       <div className="invoice-outer-border" style={{ borderColor: categoryColor }}>
 
         {/* ═══ Category Watermark ═══ */}
         <div className="invoice-watermark" style={{ color: categoryColor }}>
-          SALES
+          {config.watermark}
         </div>
 
         {/* ═══ Header ═══ */}
@@ -99,13 +138,19 @@ export default function InvoicePrint({ invoice }) {
             <table className="invoice-meta-table">
               <tbody>
                 <tr>
-                  <td className="meta-label">Invoice #</td>
+                  <td className="meta-label">{variant === 'purchase' ? 'Bill No' : 'Invoice #'}</td>
                   <td className="meta-value">{invoice.invoiceNo}</td>
                 </tr>
                 <tr>
                   <td className="meta-label">Date</td>
                   <td className="meta-value">{formatDate(invoice.date)}</td>
                 </tr>
+                {variant === 'purchase' && invoice.invoiceType && (
+                  <tr>
+                    <td className="meta-label">Type</td>
+                    <td className="meta-value">{invoice.invoiceType}</td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
@@ -115,137 +160,177 @@ export default function InvoicePrint({ invoice }) {
 
         {/* ═══ Bill To ═══ */}
         <div className="bill-to-section">
-          <div className="bill-to-header" style={{ background: categoryColor }}>BILL TO</div>
+          <div className="bill-to-header" style={{ background: categoryColor }}>{config.partyLabel}</div>
           <div className="bill-to-details">
-            <strong className="bill-to-name">{invoice.customerName}</strong>
+            <strong className="bill-to-name">{invoice.customerName || 'N/A'}</strong>
             {invoice.customerAddress1 && <p>{invoice.customerAddress1}</p>}
             {invoice.customerAddress2 && <p>{invoice.customerAddress2}</p>}
-            <p>
-              {invoice.customerCity}{invoice.customerCity && invoice.customerState ? ', ' : ''}
-              {invoice.customerState} {invoice.customerPincode}
-            </p>
+            {(invoice.customerCity || invoice.customerState || invoice.customerPincode) && (
+              <p>
+                {invoice.customerCity}{invoice.customerCity && invoice.customerState ? ', ' : ''}
+                {invoice.customerState} {invoice.customerPincode}
+              </p>
+            )}
             {invoice.customerPhone && <p>Phone: {invoice.customerPhone}</p>}
             {invoice.customerGstNumber && <p>GSTIN: {invoice.customerGstNumber}</p>}
-            <p>State: {invoice.customerState || 'KERALA'}, Code: 32</p>
+            {variant === 'sales' && (
+              <p>State: {invoice.customerState || 'KERALA'}, Code: 32</p>
+            )}
+            {variant === 'purchase' && invoice.customerState && (
+              <p>State: {invoice.customerState}</p>
+            )}
           </div>
         </div>
 
         {/* ═══ Items Table ═══ */}
         <div className="items-table-wrapper">
           <table className="invoice-items-table">
+            {renderItemsColGroup()}
             <thead>
               <tr style={{ background: categoryColor }}>
                 <th className="col-sl">Sl</th>
                 <th className="col-product">Name / Description</th>
-                <th className="col-hsn">HSN Code</th>
+                {config.showCodeColumn && <th className="col-hsn">{config.codeLabel}</th>}
                 <th className="col-qty">Qty</th>
                 <th className="col-rate">Rate</th>
                 <th className="col-amount">Amount</th>
               </tr>
             </thead>
             <tbody>
-              {items.map((item, index) => (
-                <tr key={index}>
-                  <td className="col-center">{index + 1}</td>
-                  <td className="col-product-name">
-                    <span className="product-name-text">{item.productName}</span>
-                  </td>
-                  <td className="col-center">{item.hsnCode || '—'}</td>
-                  <td className="col-center">{item.qty}</td>
-                  <td className="col-right">₹{Number(item.rate).toFixed(2)}</td>
-                  <td className="col-right">₹{Number(item.amount).toFixed(2)}</td>
-                </tr>
-              ))}
-              {/* Totals row inside table */}
-              <tr className="items-total-row">
-                <td></td>
-                <td className="items-total-label">Total</td>
-                <td></td>
-                <td className="col-center total-qty">{totalQty}</td>
-                <td></td>
-                <td className="col-right total-amount">₹{invoice.subtotal.toFixed(2)}</td>
-              </tr>
+              {items.map((item, index) => {
+                const qtyEmpty = item.qty === null || item.qty === undefined || item.qty === '';
+                const rateEmpty = item.rate === null || item.rate === undefined || item.rate === '';
+                return (
+                  <tr key={index}>
+                    <td className="col-center">{index + 1}</td>
+                    <td className="col-product-name">
+                      <span
+                        className="product-name-text"
+                        style={variant === 'service' ? { whiteSpace: 'pre-wrap' } : undefined}
+                      >
+                        {item.productName}
+                      </span>
+                    </td>
+                    {config.showCodeColumn && (
+                      <td className="col-center">{item.hsnCode || '—'}</td>
+                    )}
+                    <td className="col-center">{qtyEmpty ? '' : item.qty}</td>
+                    <td className="col-right">{rateEmpty ? '' : `₹${Number(item.rate).toFixed(2)}`}</td>
+                    <td className="col-right">₹{Number(item.amount).toFixed(2)}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
 
-        {/* ═══ Summary + Amount in Words ═══ */}
-        <div className="invoice-summary-section">
-          <div className="amount-words-box">
-            <span className="words-label">Amount in Words:</span>
-            <span className="words-value">{numberToWords(invoice.totalAmount)}</span>
-          </div>
-          <div className="totals-box">
-            <table className="totals-table">
-              <tbody>
-                <tr>
-                  <td className="label">Subtotal</td>
-                  <td className="value">₹{invoice.subtotal.toFixed(2)}</td>
-                </tr>
-                {invoice.discount > 0 && (
+        <div className="invoice-footer-block">
+        <div className="invoice-post-table">
+          <table className="invoice-items-table invoice-items-total-table">
+            {renderItemsColGroup()}
+            <tbody>
+              <tr className="items-total-row">
+                <td></td>
+                <td className="items-total-label">Total</td>
+                {config.showCodeColumn && <td></td>}
+                <td className="col-center total-qty">{totalQty || ''}</td>
+                <td></td>
+                <td className="col-right total-amount">₹{subtotal.toFixed(2)}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div className="invoice-summary-section">
+            <div className="amount-words-box">
+              <span className="words-label">Amount in Words:</span>
+              <span className="words-value">{numberToWords(totalAmount)}</span>
+              {variant === 'purchase' && invoice.account?.accountName && (
+                <>
+                  <span className="words-label" style={{ display: 'block', marginTop: '10px' }}>Paid from Account</span>
+                  <span className="words-value">{invoice.account.accountName}</span>
+                </>
+              )}
+            </div>
+            <div className="totals-box">
+              <table className="totals-table">
+                <tbody>
                   <tr>
-                    <td className="label">Discount</td>
-                    <td className="value">- ₹{invoice.discount.toFixed(2)}</td>
+                    <td className="label">Subtotal</td>
+                    <td className="value">₹{subtotal.toFixed(2)}</td>
                   </tr>
-                )}
-                {isGst && (
+                  {discount > 0 && (
+                    <tr>
+                      <td className="label">Discount</td>
+                      <td className="value">- ₹{discount.toFixed(2)}</td>
+                    </tr>
+                  )}
+                  {isGst && (
+                    <>
+                      <tr>
+                        <td className="label">CGST @ 9%</td>
+                        <td className="value">₹{cgst.toFixed(2)}</td>
+                      </tr>
+                      <tr>
+                        <td className="label">SGST @ 9%</td>
+                        <td className="value">₹{sgst.toFixed(2)}</td>
+                      </tr>
+                      <tr>
+                        <td className="label" style={{ color: '#64748b', fontSize: '10px' }}>Total GST</td>
+                        <td className="value" style={{ fontSize: '10px' }}>₹{taxAmount.toFixed(2)}</td>
+                      </tr>
+                    </>
+                  )}
+                  <tr className="grand-total-row">
+                    <td className="label" style={{ color: categoryColor }}>TOTAL</td>
+                    <td className="value" style={{ color: categoryColor }}>₹{totalAmount.toFixed(2)}</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div className="invoice-closing">
+          <div className="invoice-tail">
+            <div className="invoice-bottom-section">
+              <div className="bank-details">
+                {variant === 'purchase' ? (
                   <>
-                    <tr>
-                      <td className="label">CGST @ 9%</td>
-                      <td className="value">₹{cgst.toFixed(2)}</td>
-                    </tr>
-                    <tr>
-                      <td className="label">SGST @ 9%</td>
-                      <td className="value">₹{sgst.toFixed(2)}</td>
-                    </tr>
-                    <tr>
-                      <td className="label" style={{ color: '#64748b', fontSize: '10px' }}>Total GST</td>
-                      <td className="value" style={{ fontSize: '10px' }}>₹{taxAmount.toFixed(2)}</td>
-                    </tr>
+                    <h4>Internal Signatures</h4>
+                    <p>For internal record keeping only.</p>
+                  </>
+                ) : (
+                  <>
+                    <h4>Bank Details</h4>
+                    <p>Bank: {invoice.account?.bankName || 'Federal Bank - Manjeri'}</p>
+                    <p>Name: {invoice.account?.accountName || 'POWER VOLT'}</p>
+                    <p>A/C No: {invoice.account?.accountNumber || '13650200030606'}</p>
+                    <p>IFSC: {invoice.account?.ifscCode || 'FDRL0001365'}</p>
+                    <p>PAN: {invoice.account?.panCardNumber || settings?.companyPan || 'ANAPL6617R'}</p>
                   </>
                 )}
-                <tr className="grand-total-row">
-                  <td className="label" style={{ color: categoryColor }}>TOTAL</td>
-                  <td className="value" style={{ color: categoryColor }}>₹{invoice.totalAmount.toFixed(2)}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
+              </div>
 
-        {/* ═══ Bottom: Bank Details + Stamp + Signature ═══ */}
-        <div className="invoice-bottom-section">
-          {/* Column 1: Bank Details */}
-          <div className="bank-details">
-            <h4>Bank Details</h4>
-            <p>Bank: {invoice.account?.bankName || 'Federal Bank - Manjeri'}</p>
-            <p>Name: {invoice.account?.accountName || 'POWER VOLT'}</p>
-            <p>A/C No: {invoice.account?.accountNumber || '13650200030606'}</p>
-            <p>IFSC: {invoice.account?.ifscCode || 'FDRL0001365'}</p>
-            <p>PAN: {invoice.account?.panCardNumber || settings?.companyPan || 'ANAPL6617R'}</p>
-          </div>
+              <div className="signature-area">
+                <div className="seal-area">
+                  <img src={stamp} alt="Official Stamp" className="seal-img" />
+                </div>
+                <div className="signature-line"></div>
+                <p>Authorized Signatory</p>
+              </div>
 
-
-
-          {/* Column 3: Stamp & Signature */}
-          <div className="signature-area">
-            <div className="seal-area">
-              <img src={stamp} alt="Official Stamp" className="seal-img" />
+              <div className="invoice-footer-note" style={{ color: categoryColor }}>
+                Thank You For Your Business!
+              </div>
             </div>
-            <div className="signature-line"></div>
-            <p>Authorized Signatory</p>
+
+            {invoice.notes && (
+              <div className="invoice-notes">
+                <strong>Notes:</strong> {invoice.notes}
+              </div>
+            )}
           </div>
         </div>
-
-        {/* ═══ Terms & Footer ═══ */}
-        {invoice.notes && (
-          <div className="invoice-notes">
-            <strong>Notes:</strong> {invoice.notes}
-          </div>
-        )}
-
-        <div className="invoice-footer-note" style={{ color: categoryColor }}>
-          Thank You For Your Business!
         </div>
       </div>
     </div>

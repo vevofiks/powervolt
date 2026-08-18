@@ -8,7 +8,8 @@ import LoadingSkeleton from '../components/ui/LoadingSkeleton';
 import { serviceInvoiceApi } from '../api/serviceInvoices';
 import { formatCurrency } from '../utils/formatCurrency';
 import { formatDate } from '../utils/formatDate';
-import { HiOutlinePlus, HiOutlineEye, HiOutlineTrash, HiOutlinePencil } from 'react-icons/hi';
+import TableActions from '../components/ui/TableActions';
+import { HiOutlinePlus } from 'react-icons/hi';
 
 export default function ServiceInvoices() {
   const navigate = useNavigate();
@@ -69,17 +70,11 @@ export default function ServiceInvoices() {
         </select>
     )},
     { key: 'id', label: 'Actions', align: 'right', render: (id) => (
-      <div className="flex items-center gap-2 justify-end" onClick={(e) => e.stopPropagation()}>
-        <button className="text-gray-500 hover:text-primary transition-colors p-1" onClick={() => navigate(`/admin/service-invoice/${id}`)} title="View">
-          <HiOutlineEye size={18} />
-        </button>
-        <button className="text-gray-500 hover:text-primary transition-colors p-1" onClick={() => navigate(`/admin/service-invoice/edit/${id}`)} title="Edit">
-          <HiOutlinePencil size={18} />
-        </button>
-        <button className="text-gray-500 hover:text-red-500 transition-colors p-1" onClick={() => handleDelete(id)} title="Delete">
-          <HiOutlineTrash size={18} />
-        </button>
-      </div>
+      <TableActions
+        onView={() => navigate(`/admin/service-invoice/${id}`)}
+        onEdit={() => navigate(`/admin/service-invoice/edit/${id}`)}
+        onDelete={() => handleDelete(id)}
+      />
     )},
   ];
 
