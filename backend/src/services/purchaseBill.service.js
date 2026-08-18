@@ -26,24 +26,41 @@ class PurchaseBillService {
       throw new ApiError(404, 'Paying account not found');
     }
 
-    // Generate Bill No format Pv-bill-YYYY/SEQ if not provided or if it's the auto-generated PB- one from frontend
-    let finalBillNo = billNo;
+    // Generate Bill No format PV-BILL-YYYY/SEQ if not provided or if it's the auto-generated PB- one from frontend
+    let finalBillNo = billNo ? billNo.trim() : billNo;
     if (!finalBillNo || finalBillNo.startsWith('PB-')) {
       const year = (date ? new Date(date) : new Date()).getFullYear();
       const prefix = `PV-BILL-${year}/`;
 
-      const lastBill = await prisma.purchaseBill.findFirst({
+      const existingBills = await prisma.purchaseBill.findMany({
         where: { billNo: { startsWith: prefix } },
-        orderBy: { billNo: 'desc' }
+        select: { billNo: true }
       });
 
-      let nextSeq = 14;
-      if (lastBill) {
-        const lastSeq = parseInt(lastBill.billNo.split('/').pop(), 10);
-        if (!isNaN(lastSeq)) nextSeq = lastSeq + 1;
+      let maxSeq = 0;
+      for (const b of existingBills) {
+        const seqPart = b.billNo.split('/').pop();
+        const seqNum = parseInt(seqPart, 10);
+        if (!isNaN(seqNum) && seqNum > maxSeq) {
+          maxSeq = seqNum;
+        }
       }
 
+      let nextSeq = maxSeq > 0 ? maxSeq + 1 : 1;
       finalBillNo = `${prefix}${String(nextSeq).padStart(3, '0')}`;
+
+      // Ensure uniqueness loop
+      let exists = await prisma.purchaseBill.findUnique({ where: { billNo: finalBillNo } });
+      while (exists) {
+        nextSeq++;
+        finalBillNo = `${prefix}${String(nextSeq).padStart(3, '0')}`;
+        exists = await prisma.purchaseBill.findUnique({ where: { billNo: finalBillNo } });
+      }
+    } else {
+      const existing = await prisma.purchaseBill.findUnique({ where: { billNo: finalBillNo } });
+      if (existing) {
+        throw new ApiError(400, `Purchase bill number "${finalBillNo}" already exists`);
+      }
     }
 
     // 3. Create the PurchaseBill and Items in a single nested write

@@ -133,18 +133,29 @@ const create = async (data) => {
   const year = targetDate.getFullYear();
   const prefix = `PV-INV-${year}/`;
 
-  const lastInvoice = await prisma.salesInvoice.findFirst({
+  const existingInvoices = await prisma.salesInvoice.findMany({
     where: { invoiceNo: { startsWith: prefix } },
-    orderBy: { invoiceNo: 'desc' }
+    select: { invoiceNo: true }
   });
 
-  let nextSeq = 14; // Default starting sequence as per previous logic
-  if (lastInvoice) {
-    const lastSeq = parseInt(lastInvoice.invoiceNo.split('/').pop(), 10);
-    if (!isNaN(lastSeq)) nextSeq = lastSeq + 1;
+  let maxSeq = 0;
+  for (const inv of existingInvoices) {
+    const seqPart = inv.invoiceNo.split('/').pop();
+    const seqNum = parseInt(seqPart, 10);
+    if (!isNaN(seqNum) && seqNum > maxSeq) {
+      maxSeq = seqNum;
+    }
   }
 
-  const invoiceNo = `${prefix}${String(nextSeq).padStart(3, '0')}`;
+  let nextSeq = maxSeq > 0 ? maxSeq + 1 : 1;
+  let invoiceNo = `${prefix}${String(nextSeq).padStart(3, '0')}`;
+
+  let exists = await prisma.salesInvoice.findUnique({ where: { invoiceNo } });
+  while (exists) {
+    nextSeq++;
+    invoiceNo = `${prefix}${String(nextSeq).padStart(3, '0')}`;
+    exists = await prisma.salesInvoice.findUnique({ where: { invoiceNo } });
+  }
 
   // 2. Process Items & Calculate Totals (sequential per item)
   let subtotal = 0;

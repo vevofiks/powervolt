@@ -16,18 +16,34 @@ class ServiceInvoiceService {
       const year = (date ? new Date(date) : new Date()).getFullYear();
       const prefix = `PV-INV-${year}/`;
 
-      const lastInvoice = await prisma.serviceInvoice.findFirst({
+      const existingInvoices = await prisma.serviceInvoice.findMany({
         where: { invoiceNo: { startsWith: prefix } },
-        orderBy: { invoiceNo: 'desc' }
+        select: { invoiceNo: true }
       });
 
-      let nextSeq = 14;
-      if (lastInvoice) {
-        const lastSeq = parseInt(lastInvoice.invoiceNo.split('/').pop(), 10);
-        if (!isNaN(lastSeq)) nextSeq = lastSeq + 1;
+      let maxSeq = 0;
+      for (const inv of existingInvoices) {
+        const seqPart = inv.invoiceNo.split('/').pop();
+        const seqNum = parseInt(seqPart, 10);
+        if (!isNaN(seqNum) && seqNum > maxSeq) {
+          maxSeq = seqNum;
+        }
       }
 
+      let nextSeq = maxSeq > 0 ? maxSeq + 1 : 1;
       finalInvoiceNo = `${prefix}${String(nextSeq).padStart(3, '0')}`;
+
+      let exists = await prisma.serviceInvoice.findUnique({ where: { invoiceNo: finalInvoiceNo } });
+      while (exists) {
+        nextSeq++;
+        finalInvoiceNo = `${prefix}${String(nextSeq).padStart(3, '0')}`;
+        exists = await prisma.serviceInvoice.findUnique({ where: { invoiceNo: finalInvoiceNo } });
+      }
+    } else {
+      const existing = await prisma.serviceInvoice.findUnique({ where: { invoiceNo: finalInvoiceNo } });
+      if (existing) {
+        throw new ApiError(400, `Service invoice number "${finalInvoiceNo}" already exists`);
+      }
     }
 
     const invoice = await prisma.serviceInvoice.create({
