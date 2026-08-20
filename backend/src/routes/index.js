@@ -1,8 +1,9 @@
 const router = require('express').Router();
 const authMiddleware = require('../middlewares/auth');
 
-// ─── Public Auth Routes ───────────────────────────────────────
+// ─── Public Auth & Health Routes ──────────────────────────────
 router.use('/auth', require('./auth.routes'));
+router.use('/db', require('./db.routes'));
 
 // ─── Protected Business Routes ────────────────────────────────
 router.use('/dashboard', authMiddleware, require('./dashboard.routes'));

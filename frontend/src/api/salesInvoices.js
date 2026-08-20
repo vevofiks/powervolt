@@ -4,6 +4,7 @@ const SALES_URL = '/sales-invoices';
 
 export const salesInvoiceApi = {
   getAll: (params) => api.get(SALES_URL, { params }),
+  getNextInvoiceNo: (date) => api.get(`${SALES_URL}/next-number`, { params: { date } }),
   getById: (id) => api.get(`${SALES_URL}/${id}`),
   create: (data) => api.post(SALES_URL, data),
   update: (id, data) => api.put(`${SALES_URL}/${id}`, data),

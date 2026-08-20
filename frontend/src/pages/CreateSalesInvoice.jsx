@@ -29,6 +29,7 @@ export default function CreateSalesInvoice() {
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [productModalIndex, setProductModalIndex] = useState(null);
   const [productSubmitting, setProductSubmitting] = useState(false);
+  const [nextInvoiceNo, setNextInvoiceNo] = useState('');
 
   const [invoice, setInvoice] = useState({
     invoiceType: 'GST',
@@ -48,6 +49,14 @@ export default function CreateSalesInvoice() {
     date: new Date().toISOString().split('T')[0],
     paymentStatus: 'PENDING'
   });
+
+  // Fetch next continuous invoice number for new invoices
+  useEffect(() => {
+    if (isEditMode) return;
+    salesInvoiceApi.getNextInvoiceNo(invoice.date)
+      .then(res => setNextInvoiceNo(res.data?.nextInvoiceNo || ''))
+      .catch(() => {});
+  }, [invoice.date, isEditMode]);
 
   // Load draft on mount (only for new invoices)
   useEffect(() => {
@@ -85,6 +94,7 @@ export default function CreateSalesInvoice() {
       if (isEditMode) {
         const invoiceRes = await salesInvoiceApi.getById(id);
         const invData = invoiceRes.data;
+        setNextInvoiceNo(invData.invoiceNo || '');
         setInvoice({
           invoiceType: invData.invoiceType || 'GST',
           customerId: invData.customerId || '',
@@ -317,7 +327,19 @@ export default function CreateSalesInvoice() {
       <form onSubmit={handleSubmit}>
         <div className="invoice-grid">
           {/* Customer & Header */}
-          <Card className="invoice-card" title="Customer Details">
+          <Card
+            className="invoice-card"
+            title={
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                <span>Customer Details</span>
+                {nextInvoiceNo && (
+                  <span style={{ fontSize: '13px', fontWeight: 600, padding: '4px 10px', borderRadius: '6px', backgroundColor: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe' }}>
+                    {isEditMode ? `Invoice: ${nextInvoiceNo}` : `Next Invoice: ${nextInvoiceNo}`}
+                  </span>
+                )}
+              </div>
+            }
+          >
             <div className="form-grid">
               <div className="customer-selection-field" style={{ position: 'relative', gridColumn: 'span 2' }}>
                 <CustomerSearchInput

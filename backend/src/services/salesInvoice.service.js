@@ -45,6 +45,45 @@ const resolveCustomer = async (customerId, customerName, customerPhone, customer
 
 
 /**
+ * Helper to generate next continuous sales invoice number globally.
+ */
+const getNextInvoiceNo = async (date) => {
+  const targetDate = date ? new Date(date) : new Date();
+  const year = targetDate.getFullYear();
+  const prefix = `PV-INV-${year}/`;
+
+  // Fetch all existing SalesInvoices globally to ensure continuous sequence
+  const existingInvoices = await prisma.salesInvoice.findMany({
+    select: { invoiceNo: true }
+  });
+
+  let maxSeq = 0;
+  for (const inv of existingInvoices) {
+    if (!inv.invoiceNo) continue;
+    // Extract trailing numeric sequence (e.g. PV-INV-2026/015 -> 15)
+    const match = inv.invoiceNo.match(/(\d+)$/);
+    if (match) {
+      const seqNum = parseInt(match[1], 10);
+      if (!isNaN(seqNum) && seqNum > maxSeq) {
+        maxSeq = seqNum;
+      }
+    }
+  }
+
+  let nextSeq = maxSeq > 0 ? maxSeq + 1 : 1;
+  let invoiceNo = `${prefix}${String(nextSeq).padStart(3, '0')}`;
+
+  let exists = await prisma.salesInvoice.findUnique({ where: { invoiceNo } });
+  while (exists) {
+    nextSeq++;
+    invoiceNo = `${prefix}${String(nextSeq).padStart(3, '0')}`;
+    exists = await prisma.salesInvoice.findUnique({ where: { invoiceNo } });
+  }
+
+  return invoiceNo;
+};
+
+/**
  * Get all sales invoices with search and filters.
  * Uses sequential queries for serverless stability.
  */
@@ -129,32 +168,15 @@ const create = async (data) => {
 
   const targetDate = date ? new Date(date) : new Date();
 
-  // 1. Generate Invoice Number — sequential query to avoid race conditions
-  const year = targetDate.getFullYear();
-  const prefix = `PV-INV-${year}/`;
-
-  const existingInvoices = await prisma.salesInvoice.findMany({
-    where: { invoiceNo: { startsWith: prefix } },
-    select: { invoiceNo: true }
-  });
-
-  let maxSeq = 0;
-  for (const inv of existingInvoices) {
-    const seqPart = inv.invoiceNo.split('/').pop();
-    const seqNum = parseInt(seqPart, 10);
-    if (!isNaN(seqNum) && seqNum > maxSeq) {
-      maxSeq = seqNum;
+  // 1. Generate Invoice Number — use explicit invoiceNo if provided, otherwise generate next continuous number
+  let invoiceNo = data.invoiceNo ? data.invoiceNo.trim() : null;
+  if (!invoiceNo) {
+    invoiceNo = await getNextInvoiceNo(targetDate);
+  } else {
+    const existing = await prisma.salesInvoice.findUnique({ where: { invoiceNo } });
+    if (existing) {
+      throw ApiError.badRequest(`Invoice number "${invoiceNo}" already exists`);
     }
-  }
-
-  let nextSeq = maxSeq > 0 ? maxSeq + 1 : 1;
-  let invoiceNo = `${prefix}${String(nextSeq).padStart(3, '0')}`;
-
-  let exists = await prisma.salesInvoice.findUnique({ where: { invoiceNo } });
-  while (exists) {
-    nextSeq++;
-    invoiceNo = `${prefix}${String(nextSeq).padStart(3, '0')}`;
-    exists = await prisma.salesInvoice.findUnique({ where: { invoiceNo } });
   }
 
   // 2. Process Items & Calculate Totals (sequential per item)
@@ -476,16 +498,18 @@ const remove = async (id) => {
     });
   }
 
-  // 2. Revert Ledger (Debit the amount back)
-  await ledgerService.recordTransaction({
-    accountId: invoice.accountId,
-    date: new Date(),
-    referenceNo: `REV-${invoice.invoiceNo}`,
-    moduleType: 'ADJUSTMENT',
-    description: `Reverted Sales Invoice ${invoice.invoiceNo}`,
-    debit: invoice.totalAmount,
-    linkedId: invoice.id
-  });
+  // 2. Revert Ledger (Debit the amount back if invoice was paid)
+  if (invoice.paymentStatus === 'PAID') {
+    await ledgerService.recordTransaction({
+      accountId: invoice.accountId,
+      date: new Date(),
+      referenceNo: `REV-${invoice.invoiceNo}`,
+      moduleType: 'ADJUSTMENT',
+      description: `Reverted Sales Invoice ${invoice.invoiceNo}`,
+      debit: invoice.totalAmount,
+      linkedId: invoice.id
+    });
+  }
 
   // 3. Delete Invoice (cascade handles items)
   await prisma.salesInvoice.delete({ where: { id } });
@@ -528,4 +552,4 @@ const updatePaymentStatus = async (id, status) => {
   return updated;
 };
 
-module.exports = { getAll, getById, create, update, remove, updatePaymentStatus };
+module.exports = { getAll, getById, create, update, remove, updatePaymentStatus, getNextInvoiceNo };

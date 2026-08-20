@@ -55,4 +55,13 @@ const updatePaymentStatus = async (req, res, next) => {
   }
 };
 
-module.exports = { getAll, getById, create, update, remove, updatePaymentStatus };
+const getNextInvoiceNo = async (req, res, next) => {
+  try {
+    const nextNumber = await salesInvoiceService.getNextInvoiceNo(req.query.date);
+    res.json(ApiResponse.success({ nextInvoiceNo: nextNumber }));
+  } catch (error) {
+    next(error);
+  }
+};
+
+module.exports = { getAll, getById, create, update, remove, updatePaymentStatus, getNextInvoiceNo };

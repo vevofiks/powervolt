@@ -6,13 +6,16 @@ import Input from '../components/ui/Input';
 import Button from '../components/ui/Button';
 import LoadingSkeleton from '../components/ui/LoadingSkeleton';
 import { settingApi } from '../api/settings';
-import { HiOutlineSave, HiOutlineOfficeBuilding, HiOutlineCog, HiOutlineDatabase, HiOutlineDownload } from 'react-icons/hi';
+import { dbApi } from '../api/db';
+import { HiOutlineSave, HiOutlineOfficeBuilding, HiOutlineCog, HiOutlineDatabase, HiOutlineDownload, HiOutlineRefresh } from 'react-icons/hi';
 import './Settings.css';
 
 export default function Settings() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [isBackingUp, setIsBackingUp] = useState(false);
+  const [dbRefreshing, setDbRefreshing] = useState(false);
+  const [dbStatus, setDbStatus] = useState(null);
   const [formData, setFormData] = useState({
     companyName: '',
     companyAddress: '',
@@ -66,6 +69,19 @@ export default function Settings() {
       toast.error('Failed to generate backup');
     } finally {
       setIsBackingUp(false);
+    }
+  };
+
+  const handleRefreshDb = async () => {
+    setDbRefreshing(true);
+    try {
+      const res = await dbApi.refresh();
+      setDbStatus(res.data);
+      toast.success(`Database connection active & refreshed (${res.data.durationMs}ms)`);
+    } catch (err) {
+      toast.error('Failed to refresh database connection');
+    } finally {
+      setDbRefreshing(false);
     }
   };
 
@@ -130,6 +146,30 @@ export default function Settings() {
                 disabled 
                 helperText="Fixed for current region"
               />
+            </div>
+          </Card>
+
+          {/* Database Health & Keep-Alive */}
+          <Card title="Neon Database Keep-Alive" icon={HiOutlineRefresh}>
+            <div className="data-management-box">
+              <div className="data-info">
+                <h4>Database Refresh & Keep-Alive</h4>
+                <p>Neon PostgreSQL auto-suspends after 5 minutes of inactivity. Server auto-pings every 3.5 mins. Click to manually refresh connection.</p>
+                {dbStatus && (
+                  <div style={{ marginTop: '8px', fontSize: '12px', color: '#16a34a', fontWeight: 600 }}>
+                    Status: {dbStatus.message} ({dbStatus.durationMs}ms)
+                  </div>
+                )}
+              </div>
+              <Button 
+                type="button" 
+                variant="secondary" 
+                onClick={handleRefreshDb}
+                loading={dbRefreshing}
+                icon={HiOutlineRefresh}
+              >
+                Refresh DB Now
+              </Button>
             </div>
           </Card>
 
