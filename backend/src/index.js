@@ -107,18 +107,16 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use('/api', routes);
 
-const { startDbKeepAlive, startServerSelfPing, pingDatabase } = require('./utils/dbKeepAlive');
+const { startDbKeepAlive, initKeepAlive } = require('./utils/dbKeepAlive');
 
 // ─────────────────────────────────────────────────────────────
 // Health Check
 // ─────────────────────────────────────────────────────────────
 
-app.get('/health', async (_req, res) => {
-  const dbResult = await pingDatabase();
+app.get('/health', (_req, res) => {
   res.json({
     status: 'ok',
-    database: dbResult.success ? 'connected' : 'error',
-    dbDurationMs: dbResult.durationMs || null,
+    service: 'power-volt-api',
     timestamp: new Date().toISOString(),
   });
 });
@@ -153,13 +151,15 @@ app.use(errorHandler);
 // ─────────────────────────────────────────────────────────────
 
 app.listen(PORT, () => {
-  console.log(`⚡ Power Volt API running on http://localhost:${PORT}`);
+  console.log(`[SERVER] Backend started`);
+  console.log(`[SERVER] Port: ${PORT}`);
+
   // Start automatic Neon DB keep-alive ping every 3.5 minutes
   startDbKeepAlive();
-  // Start server self-ping if BACKEND_URL configured (e.g. Render)
-  if (process.env.BACKEND_URL || process.env.SERVER_URL) {
-    startServerSelfPing();
-  }
+
+  // Initialize optional backend self-ping keep-alive mechanism
+  const keepAlive = initKeepAlive();
+  console.log(`[SERVER] Keep-alive: ${keepAlive.enabled ? 'enabled' : 'disabled'}`);
 });
 
 module.exports = app;

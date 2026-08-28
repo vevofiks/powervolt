@@ -24,12 +24,29 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response.data,
   (error) => {
-    const message =
-      error.response?.data?.message ||
-      error.message ||
-      'Something went wrong';
+    const isTimeout = error.code === 'ECONNABORTED' || (error.message && error.message.includes('timeout'));
+    const isNetworkError = !error.response && !isTimeout;
 
-    console.error('[API Error]', message);
+    let userFacingMessage = error.response?.data?.message;
+
+    if (!userFacingMessage) {
+      if (isTimeout) {
+        userFacingMessage = 'Unable to connect to the server. The server may be starting up—please try again in a few seconds.';
+      } else if (isNetworkError) {
+        userFacingMessage = 'Unable to connect to the server. Please check your network connection and try again.';
+      } else {
+        userFacingMessage = error.message || 'Something went wrong';
+      }
+    }
+
+    // Preserve technical diagnostic error in browser console
+    console.error('[API Diagnostic Error]', {
+      code: error.code,
+      message: error.message,
+      url: error.config?.url,
+      status: error.response?.status,
+      userFacingMessage,
+    });
 
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
@@ -40,7 +57,13 @@ api.interceptors.response.use(
       }
     }
 
-    return Promise.reject({ message, status: error.response?.status });
+    return Promise.reject({
+      message: userFacingMessage,
+      technicalDetails: error.message,
+      status: error.response?.status,
+      isTimeout,
+      isNetworkError,
+    });
   }
 );
 

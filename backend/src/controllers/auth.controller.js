@@ -7,7 +7,9 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'powervolt123';
 const JWT_SECRET = process.env.JWT_SECRET || 'powervolt_secret_key';
 
 const login = async (req, res, next) => {
+  const startTime = process.hrtime();
   try {
+    console.log(`[${new Date().toISOString()}] POST /auth/login processing started`);
     const { username, password } = req.body;
 
     if (!username || !password) {
@@ -15,6 +17,7 @@ const login = async (req, res, next) => {
     }
 
     if (username !== ADMIN_USERNAME || password !== ADMIN_PASSWORD) {
+      console.warn(`[${new Date().toISOString()}] POST /auth/login authentication failed (invalid credentials)`);
       throw new ApiError(401, 'Invalid username or password');
     }
 
@@ -25,8 +28,15 @@ const login = async (req, res, next) => {
       { expiresIn: '7d' }
     );
 
+    const elapsed = process.hrtime(startTime);
+    const durationMs = (elapsed[0] * 1000 + elapsed[1] / 1e6).toFixed(2);
+    console.log(`[${new Date().toISOString()}] POST /auth/login auth completed in ${durationMs}ms`);
+
     res.json(ApiResponse.success({ token, username: ADMIN_USERNAME }, 'Login successful'));
   } catch (error) {
+    const elapsed = process.hrtime(startTime);
+    const durationMs = (elapsed[0] * 1000 + elapsed[1] / 1e6).toFixed(2);
+    console.error(`[${new Date().toISOString()}] POST /auth/login failed after ${durationMs}ms: ${error.message}`);
     next(error);
   }
 };

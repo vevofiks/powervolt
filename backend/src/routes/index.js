@@ -3,6 +3,7 @@ const authMiddleware = require('../middlewares/auth');
 
 // ─── Public Auth & Health Routes ──────────────────────────────
 router.use('/auth', require('./auth.routes'));
+router.use('/health', require('./health.routes'));
 router.use('/db', require('./db.routes'));
 
 // ─── Protected Business Routes ────────────────────────────────
