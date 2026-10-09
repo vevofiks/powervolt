@@ -29,6 +29,10 @@ function getBillToName(element) {
 
 function collectDocumentStyles() {
   const links = [...document.querySelectorAll('link[rel="stylesheet"]')]
+    .filter((link) => {
+      const href = link.href || '';
+      return !/(Reports|Salary|Login|Sidebar|WorkSite|AccountStatement|Landing)/i.test(href);
+    })
     .map((link) => `<link rel="stylesheet" href="${link.href}">`)
     .join('\n');
 
@@ -41,37 +45,44 @@ function collectDocumentStyles() {
   return `${links}\n${inlineStyles}`;
 }
 
-function waitForResources(doc, callback) {
-  const links = [...doc.querySelectorAll('link[rel="stylesheet"]')];
-  const images = [...doc.images];
-  const total = links.length + images.length;
+function waitForResources(doc) {
+  return new Promise((resolve) => {
+    const links = [...doc.querySelectorAll('link[rel="stylesheet"]')];
+    const images = [...doc.images];
+    const total = links.length + images.length;
 
-  if (total === 0) {
-    callback();
-    return;
-  }
-
-  let loaded = 0;
-  const done = () => {
-    loaded += 1;
-    if (loaded >= total) callback();
-  };
-
-  links.forEach((link) => {
-    if (link.sheet) done();
-    else {
-      link.onload = done;
-      link.onerror = done;
+    if (total === 0) {
+      resolve();
+      return;
     }
-  });
 
-  images.forEach((img) => {
-    if (img.complete) done();
-    else {
-      img.onload = done;
-      img.onerror = done;
-    }
+    let loaded = 0;
+    const done = () => {
+      loaded += 1;
+      if (loaded >= total) resolve();
+    };
+
+    links.forEach((link) => {
+      if (link.sheet) done();
+      else {
+        link.onload = done;
+        link.onerror = done;
+      }
+    });
+
+    images.forEach((img) => {
+      if (img.complete) done();
+      else {
+        img.onload = done;
+        img.onerror = done;
+      }
+    });
   });
+}
+
+function refreshPrintBody(doc, sourceElement) {
+  if (!sourceElement) return;
+  doc.body.innerHTML = sourceElement.outerHTML;
 }
 
 /** Print invoice in an isolated frame so SPA layout does not produce blank PDFs. */
@@ -132,6 +143,29 @@ export function printDocument({ fileName } = {}) {
         -webkit-box-decoration-break: clone;
         box-decoration-break: clone;
       }
+      .invoice-items-table tbody tr {
+        display: table-row !important;
+        visibility: visible !important;
+        break-inside: auto !important;
+        page-break-inside: auto !important;
+      }
+      .invoice-items-table td,
+      .invoice-items-table th {
+        visibility: visible !important;
+        overflow: visible !important;
+      }
+      .col-product-name,
+      .product-name-text {
+        white-space: normal !important;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+      }
+      .si-modern-table tbody tr {
+        display: table-row !important;
+        visibility: visible !important;
+        break-inside: auto !important;
+        page-break-inside: auto !important;
+      }
     </style>
   </head>
   <body>${element.outerHTML}</body>
@@ -142,9 +176,16 @@ export function printDocument({ fileName } = {}) {
     setTimeout(() => iframe.remove(), 500);
   };
 
-  const runPrint = () => {
-    const originalTitle = document.title;
+  const runPrint = async () => {
+    const freshElement = PRINT_TARGETS.map((selector) => document.querySelector(selector)).find(Boolean);
+    refreshPrintBody(doc, freshElement);
 
+    await waitForResources(doc);
+    if (doc.fonts?.ready) {
+      await doc.fonts.ready;
+    }
+
+    const originalTitle = document.title;
     doc.title = printTitle;
     document.title = printTitle;
 
@@ -159,12 +200,14 @@ export function printDocument({ fileName } = {}) {
     window.addEventListener('afterprint', restoreTitle);
     frameWindow.addEventListener('afterprint', restoreTitle);
 
-    frameWindow.focus();
-    frameWindow.print();
-    cleanup();
+    requestAnimationFrame(() => {
+      frameWindow.focus();
+      frameWindow.print();
+      cleanup();
+    });
   };
 
-  waitForResources(doc, () => {
-    setTimeout(runPrint, 200);
+  waitForResources(doc).then(() => {
+    setTimeout(runPrint, 100);
   });
 }

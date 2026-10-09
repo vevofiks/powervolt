@@ -279,10 +279,14 @@
 
 .col-product-name {
   text-align: left;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .product-name-text {
   font-weight: 500;
+  display: block;
+  white-space: normal;
 }
 
 .empty-row td {
@@ -614,8 +618,8 @@
   }
 
   .invoice-items-table tbody tr {
-    page-break-inside: avoid !important;
-    break-inside: avoid !important;
+    page-break-inside: auto !important;
+    break-inside: auto !important;
   }
 
   .invoice-items-table th,

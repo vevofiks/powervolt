@@ -79,6 +79,12 @@ export default function InvoicePrint({ invoice, variant = 'sales' }) {
   if (!invoice) return null;
   const items = invoice.items || [];
 
+  const getLineItemName = (item) =>
+    (item.productName && String(item.productName).trim())
+    || (item.product?.productName && String(item.product.productName).trim())
+    || (item.description && String(item.description).trim())
+    || '—';
+
   const isGst = invoice.invoiceType === 'GST';
   const taxAmount = invoice.taxAmount || 0;
   const cgst = isGst ? (taxAmount / 2) : 0;
@@ -95,12 +101,12 @@ export default function InvoicePrint({ invoice, variant = 'sales' }) {
 
   const renderItemsColGroup = () => (
     <colgroup>
-      <col className="col-sl" />
-      <col className="col-product" />
-      {config.showCodeColumn && <col className="col-hsn" />}
-      <col className="col-qty" />
-      <col className="col-rate" />
-      <col className="col-amount" />
+      <col style={{ width: config.showCodeColumn ? '5%' : '6%' }} />
+      <col style={{ width: config.showCodeColumn ? '38%' : '44%' }} />
+      {config.showCodeColumn && <col style={{ width: '12%' }} />}
+      <col style={{ width: '8%' }} />
+      <col style={{ width: '12%' }} />
+      <col style={{ width: '13%' }} />
     </colgroup>
   );
 
@@ -200,15 +206,17 @@ export default function InvoicePrint({ invoice, variant = 'sales' }) {
               {items.map((item, index) => {
                 const qtyEmpty = item.qty === null || item.qty === undefined || item.qty === '';
                 const rateEmpty = item.rate === null || item.rate === undefined || item.rate === '';
+                const lineKey = item.id || `${item.productId || 'line'}-${index}`;
+                const lineAmount = Number(item.amount);
                 return (
-                  <tr key={index}>
+                  <tr key={lineKey}>
                     <td className="col-center">{index + 1}</td>
                     <td className="col-product-name">
                       <span
                         className="product-name-text"
                         style={variant === 'service' ? { whiteSpace: 'pre-wrap' } : undefined}
                       >
-                        {item.productName}
+                        {getLineItemName(item)}
                       </span>
                     </td>
                     {config.showCodeColumn && (
@@ -216,7 +224,7 @@ export default function InvoicePrint({ invoice, variant = 'sales' }) {
                     )}
                     <td className="col-center">{qtyEmpty ? '' : item.qty}</td>
                     <td className="col-right">{rateEmpty ? '' : `₹${Number(item.rate).toFixed(2)}`}</td>
-                    <td className="col-right">₹{Number(item.amount).toFixed(2)}</td>
+                    <td className="col-right">₹{(Number.isFinite(lineAmount) ? lineAmount : 0).toFixed(2)}</td>
                   </tr>
                 );
               })}

@@ -1,6 +1,7 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const ApiError = require('../utils/ApiError');
+const stockService = require('./stock.service');
 
 class PurchaseBillService {
   async createBill(data) {
@@ -282,26 +283,18 @@ class PurchaseBillService {
       });
     }
 
-    // 2. Revert Product Stocks and Stock History
+    // 2. Revert product stock (remove quantities that were added by this bill)
     for (const item of bill.items) {
-      const product = await prisma.product.findUnique({ where: { id: item.productId } });
-      if (product) {
-        await prisma.product.update({
-          where: { id: item.productId },
-          data: {
-            currentStock: {
-              decrement: item.qty,
-            },
-          },
-        });
-
-        await prisma.stockHistory.deleteMany({
-          where: {
-            reference: bill.billNo,
-            productId: item.productId,
-          },
-        });
-      }
+      const quantity = Number(item.qty);
+      if (!Number.isFinite(quantity) || quantity <= 0) continue;
+      await stockService.recordMovement({
+        productId: item.productId,
+        type: 'SALE_OUT',
+        quantity,
+        reference: bill.billNo,
+        remark: `Reverted Purchase Bill ${bill.billNo}`,
+        date: new Date(),
+      });
     }
 
     // 3. Delete the PurchaseBill itself

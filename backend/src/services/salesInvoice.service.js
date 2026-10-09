@@ -8,6 +8,47 @@ const { buildPagination } = require('../utils/helpers');
 const stockService = require('./stock.service');
 const ledgerService = require('./ledger.service');
 
+const isStockLineItem = (item) =>
+  item.itemType !== 'SERVICE' && Boolean(item.productId);
+
+const parseItemQuantity = (item, context) => {
+  const quantity = Number(item.qty);
+  if (!Number.isFinite(quantity) || quantity <= 0) {
+    throw ApiError.badRequest(`Invalid quantity for stock update (${context})`);
+  }
+  return quantity;
+};
+
+/** Put product quantities back when a sale is deleted or edited away. */
+const restockInvoiceItems = async (items, invoiceNo, remark) => {
+  for (const item of items) {
+    if (!isStockLineItem(item)) continue;
+    await stockService.recordMovement({
+      productId: item.productId,
+      type: 'RETURN_IN',
+      quantity: parseItemQuantity(item, invoiceNo),
+      reference: invoiceNo,
+      remark,
+      date: new Date(),
+    });
+  }
+};
+
+/** Reduce stock for product lines on a new or updated sale. */
+const deductStockForInvoiceItems = async (items, invoiceNo, remark, date) => {
+  for (const item of items) {
+    if (!isStockLineItem(item)) continue;
+    await stockService.recordMovement({
+      productId: item.productId,
+      type: 'SALE_OUT',
+      quantity: parseItemQuantity(item, invoiceNo),
+      reference: invoiceNo,
+      remark,
+      date: date ? new Date(date) : new Date(),
+    });
+  }
+};
+
 /**
  * Safely resolves or creates a Customer profile and returns a valid customerId or null.
  */
@@ -266,18 +307,12 @@ const create = async (data) => {
   });
 
   // 5. Update Stock (ONLY after invoice is successfully created)
-  for (const item of items) {
-    if (item.itemType !== 'SERVICE') {
-      await stockService.recordMovement({
-        productId: item.productId,
-        type: 'SALE_OUT',
-        quantity: item.qty,
-        reference: invoiceNo,
-        remark: `Sale Invoice ${invoiceNo}`,
-        date: date || new Date()
-      });
-    }
-  }
+  await deductStockForInvoiceItems(
+    invoice.items,
+    invoiceNo,
+    `Sale Invoice ${invoiceNo}`,
+    date
+  );
 
   // 6. Record Ledger Transaction ONLY if PAID
   if (finalPaymentStatus === 'PAID') {
@@ -333,17 +368,11 @@ const update = async (id, data) => {
   const invoiceNo = originalInvoice.invoiceNo;
 
   // 1. Revert Stock for original items
-  for (const item of originalInvoice.items) {
-    if (item.itemType === 'SERVICE' || !item.productId) continue;
-    await stockService.recordMovement({
-      productId: item.productId,
-      type: 'RETURN_IN',
-      quantity: item.qty,
-      reference: invoiceNo,
-      remark: `Reverted stock for edited Invoice ${invoiceNo}`,
-      date: new Date()
-    });
-  }
+  await restockInvoiceItems(
+    originalInvoice.items,
+    invoiceNo,
+    `Reverted stock for edited Invoice ${invoiceNo}`
+  );
 
   // 2. Revert Ledger Transaction if original was PAID
   if (originalInvoice.paymentStatus === 'PAID') {
@@ -401,17 +430,6 @@ const update = async (id, data) => {
       amount: itemAmount,
       itemType: isService ? 'SERVICE' : 'PRODUCT'
     });
-
-    if (!isService) {
-      await stockService.recordMovement({
-        productId: item.productId,
-        type: 'SALE_OUT',
-        quantity: item.qty,
-        reference: invoiceNo,
-        remark: `Sale Invoice ${invoiceNo} (Edited)`,
-        date: date || new Date()
-      });
-    }
   }
 
   const totalAmount = subtotal + taxAmount - (parseFloat(discount) || 0);
@@ -472,6 +490,13 @@ const update = async (id, data) => {
     include: { items: true }
   });
 
+  await deductStockForInvoiceItems(
+    invoice.items,
+    invoiceNo,
+    `Sale Invoice ${invoiceNo} (Edited)`,
+    date
+  );
+
   return invoice;
 };
 
@@ -485,18 +510,12 @@ const remove = async (id) => {
   });
   if (!invoice) throw ApiError.notFound('Invoice not found');
 
-  // 1. Revert Stock for each item sequentially
-  for (const item of invoice.items) {
-    if (item.itemType === 'SERVICE' || !item.productId) continue;
-    await stockService.recordMovement({
-      productId: item.productId,
-      type: 'RETURN_IN',
-      quantity: item.qty,
-      reference: invoice.invoiceNo,
-      remark: `Reverted Sale Invoice ${invoice.invoiceNo}`,
-      date: new Date()
-    });
-  }
+  // 1. Restock product lines from this invoice
+  await restockInvoiceItems(
+    invoice.items,
+    invoice.invoiceNo,
+    `Reverted Sale Invoice ${invoice.invoiceNo}`
+  );
 
   // 2. Revert Ledger (Debit the amount back if invoice was paid)
   if (invoice.paymentStatus === 'PAID') {
